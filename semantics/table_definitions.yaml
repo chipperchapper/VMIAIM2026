@@ -1,0 +1,82 @@
+# Machine-readable data dictionary (proposal §4.2).
+# Consumed by app/data_dictionary.py to build the agent's system instruction.
+
+tables:
+  aim_raw.dod_contracts_test:
+    description: >
+      TEST SLICE of US Department of Defense prime contract transactions from
+      USAspending.gov (204 rows, action dates Apr-Jul 2026, heavily filtered -
+      for pipeline testing only, NOT analytically representative). The full
+      FY2024-FY2025 tables will share this exact schema.
+    grain: >
+      One row per contract TRANSACTION (an award or a modification). One
+      contract has many transactions - count contracts via
+      COUNT(DISTINCT contract_award_unique_key).
+    source: USAspending.gov custom download, retrieved 2026-07-14, public domain.
+    limitations: >
+      Test data only. dod_claimant_program / dod_acquisition_program /
+      national_interest_action are sparsely populated. Sub-agency names are
+      official forms ("Department of the Army").
+    columns:
+      contract_transaction_unique_key: Primary key of the transaction row
+      contract_award_unique_key: Groups all transactions of one contract award; use for contract counts
+      award_id_piid: Human-readable contract number (PIID) - cite this as evidence
+      parent_award_id_piid: PIID of the parent contract vehicle (IDV) for delivery orders
+      modification_number: "0 = original award; other values = modifications"
+      award_or_idv_flag: AWARD or IDV (indefinite-delivery vehicle)
+      federal_action_obligation: Dollars obligated by this transaction; NEGATIVE = deobligation
+      total_dollars_obligated: Cumulative dollars for the award to date
+      current_total_value_of_award: Current contract ceiling in dollars
+      potential_total_value_of_award: Ceiling if all options are exercised
+      action_date: Date of this transaction (DATE)
+      action_date_fiscal_year: Federal fiscal year of action_date (Oct-Sep)
+      period_of_performance_start_date: Work start date
+      period_of_performance_current_end_date: Current scheduled end date
+      period_of_performance_potential_end_date: End date if all options exercised
+      awarding_sub_agency_name: 'Awarding military branch/agency, official names: "Department of the Army", "Department of the Navy", "Department of the Air Force", "Defense Logistics Agency", "Defense Information Systems Agency", etc.'
+      awarding_office_name: Specific contracting office
+      funding_sub_agency_name: Sub-agency paying for the work (can differ from awarding)
+      recipient_uei: Unique Entity Identifier of the vendor
+      recipient_name: Vendor legal name
+      recipient_parent_uei: UEI of the vendor's ultimate parent company
+      recipient_parent_name: Ultimate parent company name - use for company-level rollups
+      recipient_city_name: Vendor headquarters city
+      recipient_state_code: Vendor state (2-letter code)
+      recipient_country_name: Vendor country
+      primary_place_of_performance_city_name: City where the work is performed
+      primary_place_of_performance_state_code: State where the work is performed (2-letter)
+      primary_place_of_performance_country_name: Country where the work is performed
+      prime_award_transaction_place_of_performance_cd_current: Congressional district of performance (current boundaries)
+      award_type: Contract form (definitive contract, delivery order, purchase order, BPA call)
+      transaction_description: Free-text description of what was procured
+      naics_code: Industry classification code (NAICS)
+      naics_description: Industry classification name
+      product_or_service_code: Product/Service Code (PSC) - what was bought
+      product_or_service_code_description: PSC name
+      dod_claimant_program_code: DoD budget-category program code (sparse)
+      dod_claimant_program_description: DoD budget-category program name, e.g. SERVICES (sparse)
+      dod_acquisition_program_code: Named DoD acquisition/weapon-system program code (very sparse)
+      dod_acquisition_program_description: Named DoD acquisition/weapon-system program (very sparse)
+      foreign_funding: Foreign-funding code (e.g. Foreign Military Sales)
+      foreign_funding_description: Foreign-funding meaning; usually NOT APPLICABLE
+      country_of_product_or_service_origin: Country the product/service originates from
+      place_of_manufacture: Domestic vs foreign manufacture category
+      national_interest_action: Declared emergency/contingency operation this contract supports (sparse)
+      extent_competed: Competition category (FULL AND OPEN COMPETITION, NOT COMPETED, etc.)
+      solicitation_procedures: How the requirement was solicited
+      number_of_offers_received: Number of offers received (INT; 1 = no real competition)
+      type_of_set_aside: Small-business set-aside category if any
+      type_of_contract_pricing: Pricing structure (FIRM FIXED PRICE, COST PLUS..., etc.)
+      contracting_officers_determination_of_business_size: SMALL BUSINESS or OTHER THAN SMALL BUSINESS
+      action_type: Nature of the transaction (new award vs type of modification)
+      multi_year_contract: Multi-year contracting authority flag (BOOL)
+      woman_owned_business: Vendor is woman-owned (BOOL)
+      veteran_owned_business: Vendor is veteran-owned (BOOL)
+      service_disabled_veteran_owned_business: Vendor is service-disabled-veteran-owned (BOOL)
+      minority_owned_business: Vendor is minority-owned (BOOL)
+      c8a_program_participant: Vendor is an SBA 8(a) program participant (BOOL)
+      historically_underutilized_business_zone_hubzone_firm: Vendor is a HUBZone firm (BOOL)
+      alaskan_native_corporation_owned_firm: Vendor is Alaskan-Native-Corporation-owned (BOOL)
+      native_american_owned_business: Vendor is Native-American-owned (BOOL)
+      educational_institution: Vendor is an educational institution (BOOL)
+      nonprofit_organization: Vendor is a nonprofit (BOOL)

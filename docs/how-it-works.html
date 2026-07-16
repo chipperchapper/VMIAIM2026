@@ -1,0 +1,398 @@
+<title>How the Analytics Agent Works</title>
+<style>
+  :root {
+    --bg: #F4F5F2;
+    --surface: #FFFFFF;
+    --surface-2: #EBEEE9;
+    --ink: #1C2420;
+    --ink-soft: #55605A;
+    --line: #D7DCD4;
+    --green: #2F6B4F;
+    --green-soft: #E3EDE7;
+    --brass: #8A6D24;
+    --brass-soft: #F3ECD9;
+    --red: #A0402F;
+    --red-soft: #F4E4DF;
+    --mono: "Cascadia Code", "SF Mono", Consolas, "Courier New", monospace;
+    --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151A17; --surface: #1E2521; --surface-2: #262E29;
+      --ink: #E4EAE4; --ink-soft: #9CA89F; --line: #37413B;
+      --green: #7FBF9E; --green-soft: #24352C;
+      --brass: #CFA94E; --brass-soft: #37301C;
+      --red: #D98A76; --red-soft: #3D2A24;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151A17; --surface: #1E2521; --surface-2: #262E29;
+    --ink: #E4EAE4; --ink-soft: #9CA89F; --line: #37413B;
+    --green: #7FBF9E; --green-soft: #24352C;
+    --brass: #CFA94E; --brass-soft: #37301C;
+    --red: #D98A76; --red-soft: #3D2A24;
+  }
+  :root[data-theme="light"] {
+    --bg: #F4F5F2; --surface: #FFFFFF; --surface-2: #EBEEE9;
+    --ink: #1C2420; --ink-soft: #55605A; --line: #D7DCD4;
+    --green: #2F6B4F; --green-soft: #E3EDE7;
+    --brass: #8A6D24; --brass-soft: #F3ECD9;
+    --red: #A0402F; --red-soft: #F4E4DF;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--sans); line-height: 1.6;
+    margin: 0; padding: 2.5rem 1.25rem 5rem;
+  }
+  main { max-width: 860px; margin: 0 auto; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--green); margin: 0 0 .5rem;
+  }
+  h1 {
+    font-size: clamp(1.7rem, 4.5vw, 2.4rem); line-height: 1.15;
+    margin: 0 0 .75rem; text-wrap: balance; font-weight: 650;
+  }
+  .lede { font-size: 1.08rem; color: var(--ink-soft); max-width: 60ch; margin: 0 0 1rem; }
+
+  section { margin-top: 3.5rem; }
+  h2 {
+    font-size: 1.35rem; margin: 0 0 .35rem; text-wrap: balance;
+    display: flex; align-items: baseline; gap: .6rem;
+  }
+  h2 .step-no {
+    font-family: var(--mono); font-size: .95rem; color: var(--brass);
+    flex: none;
+  }
+  .sub { color: var(--ink-soft); margin: 0 0 1.25rem; max-width: 62ch; }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 1.4rem; overflow-x: auto;
+  }
+
+  /* ---- cast cards ---- */
+  .cast { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .8rem; }
+  .cast .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    padding: 1rem 1.1rem;
+  }
+  .card .who { font-weight: 650; margin: 0 0 .2rem; display: flex; gap: .5rem; align-items: center; }
+  .card .role { font-size: .88rem; color: var(--ink-soft); margin: 0; }
+  .badge {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;
+    background: var(--green-soft); color: var(--green); border-radius: 4px; padding: .15rem .45rem;
+  }
+  .badge.brass { background: var(--brass-soft); color: var(--brass); }
+
+  /* ---- pipeline ---- */
+  .flow { display: flex; flex-direction: column; gap: 0; }
+  .stage {
+    display: grid; grid-template-columns: 2.4rem 1fr; gap: 1rem;
+    padding: .85rem 0;
+  }
+  .stage + .stage { border-top: 1px dashed var(--line); }
+  .stage .n {
+    font-family: var(--mono); font-weight: 600; color: var(--brass);
+    background: var(--brass-soft); border-radius: 6px; height: 2.1rem; width: 2.4rem;
+    display: flex; align-items: center; justify-content: center; font-size: .9rem;
+  }
+  .stage h3 { margin: .15rem 0 .2rem; font-size: 1rem; }
+  .stage p { margin: 0; font-size: .92rem; color: var(--ink-soft); max-width: 62ch; }
+  .stage .actor {
+    font-family: var(--mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--green); margin-bottom: .1rem;
+  }
+  .bubble {
+    font-family: var(--mono); font-size: .82rem; background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 8px; padding: .55rem .8rem;
+    margin-top: .5rem; color: var(--ink); white-space: pre-wrap;
+  }
+
+  /* ---- gates ---- */
+  .gates { display: flex; flex-direction: column; gap: .55rem; }
+  .gate {
+    display: grid; grid-template-columns: 1.7rem 1fr auto; align-items: center; gap: .9rem;
+    background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--green);
+    border-radius: 8px; padding: .7rem 1rem;
+  }
+  .gate .icon { font-size: 1.05rem; text-align: center; }
+  .gate .what { font-size: .93rem; }
+  .gate .what b { display: block; font-size: .97rem; }
+  .gate .verdict {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--red); background: var(--red-soft); padding: .2rem .55rem; border-radius: 4px;
+    white-space: nowrap;
+  }
+  .gate-arrow { text-align: center; color: var(--ink-soft); font-size: .8rem; font-family: var(--mono); }
+
+  /* ---- auth chain ---- */
+  .chain { display: flex; align-items: stretch; gap: .5rem; flex-wrap: wrap; }
+  .chain .node {
+    flex: 1 1 150px; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: .85rem .95rem; min-width: 150px;
+  }
+  .chain .node b { display: block; font-size: .92rem; margin-bottom: .15rem; }
+  .chain .node span { font-size: .8rem; color: var(--ink-soft); display: block; }
+  .chain .link {
+    align-self: center; font-family: var(--mono); color: var(--brass);
+    font-size: 1.1rem; flex: none; padding: 0 .1rem;
+  }
+  .no-key {
+    margin-top: 1rem; background: var(--green-soft); border: 1px solid var(--green);
+    border-radius: 8px; padding: .7rem 1rem; font-size: .93rem; color: var(--ink);
+  }
+
+  /* ---- modes ---- */
+  .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .9rem; }
+  .mode { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; }
+  .mode header {
+    font-family: var(--mono); font-size: .78rem; letter-spacing: .1em; text-transform: uppercase;
+    padding: .55rem 1rem; display: flex; justify-content: space-between; align-items: center;
+  }
+  .mode.dry header { background: var(--brass-soft); color: var(--brass); }
+  .mode.live header { background: var(--green-soft); color: var(--green); }
+  .mode ul { margin: .4rem 0 .9rem; padding: 0 1rem 0 2.1rem; font-size: .9rem; color: var(--ink-soft); }
+  .mode li { margin: .3rem 0; }
+  .mode li b { color: var(--ink); }
+
+  /* ---- file map ---- */
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { text-align: left; padding: .55rem .75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-soft); }
+  td code, .file { font-family: var(--mono); font-size: .82rem; color: var(--green); white-space: nowrap; }
+
+  .analogy {
+    border-left: 3px solid var(--brass); padding: .2rem 0 .2rem 1rem;
+    color: var(--ink-soft); font-size: .95rem; margin: 1.2rem 0 0; font-style: italic;
+  }
+  footer { margin-top: 4rem; font-size: .8rem; color: var(--ink-soft); font-family: var(--mono); }
+</style>
+
+<main>
+  <p class="eyebrow">VMI AIM 2026 · Hosted Analytics Agent</p>
+  <h1>How your question becomes an answer</h1>
+  <p class="lede">A plain-English walkthrough of what happens between typing
+  "Who got the most Navy money?" and getting a number back — and why the
+  system can't wreck the data or the budget along the way.</p>
+
+  <!-- ================= CAST ================= -->
+  <section>
+    <h2>The four players</h2>
+    <p class="sub">Everything in this project is one of these four things talking to the others.</p>
+    <div class="cast">
+      <div class="card">
+        <p class="who">🧑 You <span class="badge brass">browser</span></p>
+        <p class="role">Ask questions in plain English at localhost:8000 (later: a public URL).</p>
+      </div>
+      <div class="card">
+        <p class="who">🧠 The brain <span class="badge">gemini</span></p>
+        <p class="role">A language model (Gemini) that reads your question, plans, and writes SQL. It can only <em>think and talk</em> — it can't touch anything directly.</p>
+      </div>
+      <div class="card">
+        <p class="who">🔧 The tools <span class="badge">our python</span></p>
+        <p class="role">Three functions we wrote: <code class="file">list_tables</code>, <code class="file">show_schema</code>, <code class="file">run_query</code>. The only hands the brain has — and every hand wears a safety glove.</p>
+      </div>
+      <div class="card">
+        <p class="who">🗄️ BigQuery <span class="badge">warehouse</span></p>
+        <p class="role">Google's database holding the DoD contract data. Does the heavy number-crunching and sends back small result tables.</p>
+      </div>
+    </div>
+    <p class="analogy">Think of it as a smart analyst coworker: the brain is their reasoning,
+    the tools are their keyboard, BigQuery is the filing room — and we only gave
+    them a read-only badge for the filing room.</p>
+  </section>
+
+  <!-- ================= PIPELINE ================= -->
+  <section>
+    <h2>The journey of one question</h2>
+    <p class="sub">Numbered because it really happens in this order — this is the loop
+    the ADK (Agent Development Kit) runs every time you hit Enter.</p>
+    <div class="panel flow">
+      <div class="stage">
+        <div class="n">1</div>
+        <div>
+          <div class="actor">you</div>
+          <h3>You ask in English</h3>
+          <div class="bubble">"Which parent company received the most obligations?"</div>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="n">2</div>
+        <div>
+          <div class="actor">brain · gemini</div>
+          <h3>The brain reads its briefing packet</h3>
+          <p>Before your question even arrives, the brain has been handed a system
+          instruction we build from the <code class="file">semantics/</code> YAML files:
+          what every table and column means, that "Army" really means
+          <em>Department of the Army</em>, that one contract = many transaction rows,
+          and the approved metric formulas. This packet is why it writes sensible SQL
+          instead of guessing.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="n">3</div>
+        <div>
+          <div class="actor">brain · gemini</div>
+          <h3>It writes one SQL query</h3>
+          <div class="bubble">SELECT recipient_parent_name,
+       SUM(federal_action_obligation) AS total
+FROM aim_raw.dod_contracts_test
+GROUP BY recipient_parent_name
+ORDER BY total DESC LIMIT 3</div>
+          <p>SQL is the language databases speak — "group the rows by parent company,
+          add up the dollars, give me the biggest three."</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="n">4</div>
+        <div>
+          <div class="actor">tools · our python</div>
+          <h3>It hands the SQL to <code class="file">run_query</code> — and loses control</h3>
+          <p>From here on, <em>our code</em> is in charge, not the model. The query
+          must pass every safety gate below before BigQuery ever sees it.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="n">5</div>
+        <div>
+          <div class="actor">bigquery</div>
+          <h3>BigQuery runs it — with a leash on</h3>
+          <p>Hard caps ride along with the query: scan at most 1 GB, run at most
+          30 seconds, return at most 100 rows. The database itself also enforces
+          that our identity is <b>read-only</b> — even a bug in our code couldn't
+          change or delete data.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="n">6</div>
+        <div>
+          <div class="actor">tools · our python</div>
+          <h3>Results come back, and the receipt is filed</h3>
+          <p>The rows return to the tool, which writes an audit line
+          (what SQL, how many bytes, how long) to <code class="file">logs/audit.jsonl</code> —
+          so there's always a paper trail.</p>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="n">7</div>
+        <div>
+          <div class="actor">brain · gemini</div>
+          <h3>The brain turns rows into an answer</h3>
+          <div class="bubble">Top parent company: PARAGON PROFESSIONAL SERVICES LLC
+($12.8M)... Method: summed obligations, grouped by
+parent, negatives included. SQL: [shown]</div>
+          <p>The "answer contract" in its instructions requires: lead with the answer,
+          show evidence, state the method, show the SQL. If the data can't answer the
+          question, it must say so — not invent a number.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= GATES ================= -->
+  <section>
+    <h2>The safety gates</h2>
+    <p class="sub">Step 4 in detail. Every query walks this gauntlet — fail any gate and
+    it's rejected with an explanation, never executed. The model can't skip a gate,
+    because the gates live in our Python, not in its prompt.</p>
+    <div class="gates">
+      <div class="gate">
+        <div class="icon">⏱️</div>
+        <div class="what"><b>Rate limit</b> Max 12 queries per minute — a runaway loop can't hammer the warehouse.</div>
+        <div class="verdict">else: rejected</div>
+      </div>
+      <div class="gate-arrow">▼ passed</div>
+      <div class="gate">
+        <div class="icon">📖</div>
+        <div class="what"><b>Read-only check</b> Must be a single SELECT. INSERT, DELETE, DROP, CREATE… are blocked as words — even hidden mid-query.</div>
+        <div class="verdict">else: rejected</div>
+      </div>
+      <div class="gate-arrow">▼ passed</div>
+      <div class="gate">
+        <div class="icon">🗂️</div>
+        <div class="what"><b>Dataset allowlist</b> May only touch <code class="file">aim_raw</code>, <code class="file">aim_core</code>, <code class="file">aim_analytics</code>. Any other table name → blocked.</div>
+        <div class="verdict">else: rejected</div>
+      </div>
+      <div class="gate-arrow">▼ passed</div>
+      <div class="gate">
+        <div class="icon">🧾</div>
+        <div class="what"><b>Dry run (free)</b> BigQuery pre-checks the syntax and estimates the cost in bytes — before spending anything.</div>
+        <div class="verdict">else: rejected</div>
+      </div>
+      <div class="gate-arrow">▼ passed</div>
+      <div class="gate">
+        <div class="icon">💰</div>
+        <div class="what"><b>Cost cap + timeout + row cap</b> Executes with maximum-bytes-billed = 1 GB, 30 s timeout, 100-row result limit.</div>
+        <div class="verdict">else: killed</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= AUTH ================= -->
+  <section>
+    <h2>Where's the API key? (There isn't one)</h2>
+    <p class="sub">Most AI apps carry a secret key that can leak. Ours borrows identity
+    instead — the same way the <code class="file">bq</code> command does.</p>
+    <div class="panel">
+      <div class="chain">
+        <div class="node"><b>Your Google sign-in</b><span>The browser approvals you did during setup stored a token on this machine ("this laptop acts as you").</span></div>
+        <div class="link">→</div>
+        <div class="node"><b>Vertex AI</b><span>Google Cloud's door to Gemini, inside project <code class="file">vmi-aim-2026</code>. Checks: is this identity allowed here?</span></div>
+        <div class="link">→</div>
+        <div class="node"><b>Gemini answers</b><span>Usage billed to the project — visible under the sponsor's $25 budget alert. No key to store, rotate, or leak.</span></div>
+      </div>
+      <div class="no-key">🔒 <b>When deployed to Cloud Run</b>, the app swaps "you" for its own
+      service account — an identity that can <em>only</em> run read-only BigQuery jobs and call the model.
+      The empty <code class="file">OPENAI_API_KEY</code> secret from the setup guide stays unused.</div>
+    </div>
+  </section>
+
+  <!-- ================= MODES ================= -->
+  <section>
+    <h2>The two-position safety switch</h2>
+    <p class="sub">One environment variable (<code class="file">SAFETY_SWITCH</code> in <code class="file">.env</code>) decides whether queries actually run.</p>
+    <div class="modes">
+      <div class="mode dry">
+        <header><span>DRY_RUN</span><span>default</span></header>
+        <ul>
+          <li>Query is validated and <b>cost-estimated</b>…</li>
+          <li>…but <b>never executed</b></li>
+          <li>Agent reports the SQL it <em>would</em> run</li>
+          <li>Perfect for testing prompts at zero query cost</li>
+        </ul>
+      </div>
+      <div class="mode live">
+        <header><span>LIVE</span><span>explicit opt-in</span></header>
+        <ul>
+          <li>Requires <b>two</b> variables set on purpose (<code class="file">SAFETY_SWITCH=LIVE</code> + <code class="file">REQUIRE_EXPLICIT_LIVE=true</code>)</li>
+          <li>Queries execute — with every gate still active</li>
+          <li>Real numbers, real (tiny) costs</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FILES ================= -->
+  <section>
+    <h2>Which file does what</h2>
+    <p class="sub">The whole agent is seven small files in <code class="file">C:\dev\hosted-analytics-agent</code>.</p>
+    <div class="panel" style="padding:.4rem 1rem;">
+      <table>
+        <tr><th>File</th><th>Job in one line</th></tr>
+        <tr><td><code>app/agent.py</code></td><td>The assembly point: names the brain (model), hands it the briefing packet and the three tools.</td></tr>
+        <tr><td><code>app/config.py</code></td><td>Reads <code>.env</code>: safety switch, cost caps, project ID, which model.</td></tr>
+        <tr><td><code>app/data_dictionary.py</code></td><td>Builds the briefing packet from the YAML files below.</td></tr>
+        <tr><td><code>app/tools/bq_tools.py</code></td><td>The three tools; <code>run_query</code> owns the safety gauntlet.</td></tr>
+        <tr><td><code>app/query_validator.py</code></td><td>Gates 2–3: read-only + allowlist rules.</td></tr>
+        <tr><td><code>app/audit.py</code></td><td>The receipt printer (audit log) and the rate limiter.</td></tr>
+        <tr><td><code>semantics/*.yaml</code></td><td>The knowledge: table dictionary, business glossary, approved metric formulas. Edit these to make the agent smarter — no code changes needed.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <footer>hosted-analytics-agent · docs/how-it-works.html · generated 2026-07-16</footer>
+</main>

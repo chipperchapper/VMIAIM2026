@@ -1,0 +1,20 @@
+# Synonyms and domain language a nontechnical user may use (proposal §4.2).
+
+terms:
+  Army: awarding_sub_agency_name = 'Department of the Army'
+  Navy: awarding_sub_agency_name = 'Department of the Navy' (includes the Marine Corps)
+  Air Force: awarding_sub_agency_name = 'Department of the Air Force' (includes Space Force)
+  DISA: awarding_sub_agency_name = 'Defense Information Systems Agency'
+  DLA: awarding_sub_agency_name = 'Defense Logistics Agency'
+  contract / award: One contract_award_unique_key; count with COUNT(DISTINCT ...)
+  transaction / action: One table row - an award or modification event
+  contractor / vendor / company: recipient; roll subsidiaries up with recipient_parent_name
+  obligation / spending / dollars: federal_action_obligation summed over transactions
+  deobligation: Negative federal_action_obligation - money pulled back from a contract
+  PIID: The contract number people cite (award_id_piid)
+  fiscal year / FY: US federal fiscal year, Oct 1 - Sep 30 (use action_date_fiscal_year)
+  small business: contracting_officers_determination_of_business_size = 'SMALL BUSINESS'
+  set-aside: Contract reserved for certain business categories (type_of_set_aside)
+  sole source / no-bid: extent_competed = 'NOT COMPETED' (or NOT AVAILABLE FOR COMPETITION)
+  FMS / foreign military sales: foreign_funding indicates foreign-government funding
+  IDV / contract vehicle: Indefinite-delivery vehicle (award_or_idv_flag = 'IDV'); delivery orders reference it via parent_award_id_piid

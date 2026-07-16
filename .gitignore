@@ -1,0 +1,22 @@
+# Secrets — never commit (per setup guide §12)
+.env
+.env.*
+*.key
+*.pem
+*service-account*.json
+*credentials*.json
+
+# Bulk data — raw zips and staged files stay local
+data/downloads/
+data/staging/
+
+# Runtime logs
+logs/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# ADK local session state
+.adk/

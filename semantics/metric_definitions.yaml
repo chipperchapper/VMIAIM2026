@@ -1,0 +1,33 @@
+# Approved computed metrics (proposal §4.3). Status: draft until validated
+# against known values (Day 6 work). The agent must use these definitions
+# verbatim and disclose them - never invent a formula.
+
+metrics:
+  competition_rate:
+    status: draft
+    business_question: What share of contract dollars was awarded competitively?
+    definition: >
+      Competitively-obligated dollars divided by total obligated dollars.
+      Competitive = extent_competed IN ('FULL AND OPEN COMPETITION',
+      'FULL AND OPEN COMPETITION AFTER EXCLUSION OF SOURCES', 'COMPETED UNDER SAP').
+    formula_sql: >
+      SAFE_DIVIDE(SUM(IF(extent_competed IN ('FULL AND OPEN COMPETITION',
+      'FULL AND OPEN COMPETITION AFTER EXCLUSION OF SOURCES','COMPETED UNDER SAP'),
+      federal_action_obligation, 0)), SUM(federal_action_obligation))
+    grain: any aggregation of transactions
+    null_handling: NULL extent_competed treated as not competitive; negative obligations included as-is
+    limitations: Dollar-weighted; a count-weighted variant differs. Not yet validated.
+
+  small_business_share:
+    status: draft
+    business_question: What share of obligated dollars went to small businesses?
+    definition: >
+      Dollars where contracting_officers_determination_of_business_size =
+      'SMALL BUSINESS' divided by total obligated dollars.
+    formula_sql: >
+      SAFE_DIVIDE(SUM(IF(contracting_officers_determination_of_business_size
+      = 'SMALL BUSINESS', federal_action_obligation, 0)),
+      SUM(federal_action_obligation))
+    grain: any aggregation of transactions
+    null_handling: NULL business size treated as not small; negatives included as-is
+    limitations: Not yet validated against SBA scorecard methodology.
