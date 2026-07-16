@@ -27,6 +27,9 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 
 def _build_id() -> str:
+    import os
+    if os.getenv("BUILD_ID"):        # set at deploy time (no .git in the container)
+        return os.environ["BUILD_ID"]
     try:
         return subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],

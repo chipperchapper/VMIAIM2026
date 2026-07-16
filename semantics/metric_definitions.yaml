@@ -1,10 +1,11 @@
-# Approved computed metrics (proposal §4.3). Status: draft until validated
-# against known values (Day 6 work). The agent must use these definitions
-# verbatim and disclose them - never invent a formula.
+# Approved computed metrics (proposal §4.3). The agent must use these
+# definitions verbatim and disclose them - never invent a formula.
+# "validated" = SQL result matched an independent Python computation over the
+# source file (see evals/metric_validation.md).
 
 metrics:
   competition_rate:
-    status: draft
+    status: validated (test slice, 2026-07-16 - see evals/metric_validation.md)
     business_question: What share of contract dollars was awarded competitively?
     definition: >
       Competitively-obligated dollars divided by total obligated dollars.
@@ -19,7 +20,7 @@ metrics:
     limitations: Dollar-weighted; a count-weighted variant differs. Not yet validated.
 
   small_business_share:
-    status: draft
+    status: validated (test slice, 2026-07-16 - see evals/metric_validation.md)
     business_question: What share of obligated dollars went to small businesses?
     definition: >
       Dollars where contracting_officers_determination_of_business_size =
@@ -31,3 +32,31 @@ metrics:
     grain: any aggregation of transactions
     null_handling: NULL business size treated as not small; negatives included as-is
     limitations: Not yet validated against SBA scorecard methodology.
+
+  contractor_concentration_hhi:
+    status: validated (test slice, 2026-07-16 - see evals/metric_validation.md)
+    business_question: >
+      How concentrated is DoD spending among parent companies? (Herfindahl-
+      Hirschman Index: 10000 = one company gets everything; near 0 = spread
+      across many; antitrust convention calls >2500 highly concentrated.)
+    definition: >
+      Net obligations per recipient_parent_name; EXCLUDE parents whose net is
+      zero or negative (pure deobligations distort shares); shares computed
+      over the remaining positive total; HHI = SUM(share^2) * 10000.
+    formula_sql: >
+      WITH parent_totals AS (
+        SELECT recipient_parent_name, SUM(federal_action_obligation) AS net
+        FROM aim_core.contract_transactions
+        GROUP BY recipient_parent_name
+        HAVING net > 0
+      ), shares AS (
+        SELECT net / SUM(net) OVER () AS share FROM parent_totals
+      )
+      SELECT ROUND(SUM(POW(share, 2)) * 10000, 1) AS hhi FROM shares
+    grain: any population of transactions (filter first, then compute)
+    eligible_population: parents with positive net obligations in the period
+    exclusions: parents with net <= 0 in the period
+    null_handling: NULL parent names grouped as their own bucket
+    limitations: >
+      Sensitive to how subsidiaries roll up (we use recipient_parent_name).
+      Nontrivial by design - the proposal requires at least one such metric.

@@ -1,0 +1,15 @@
+.git
+.venv
+__pycache__
+*.pyc
+.env
+.env.*
+data/downloads
+data/staging
+logs
+docs
+evals
+tests
+.adk
+*.zip
+*.csv.gz

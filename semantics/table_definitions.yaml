@@ -2,12 +2,14 @@
 # Consumed by app/data_dictionary.py to build the agent's system instruction.
 
 tables:
-  aim_raw.dod_contracts_test:
+  aim_core.contract_transactions:
     description: >
-      TEST SLICE of US Department of Defense prime contract transactions from
-      USAspending.gov (204 rows, action dates Apr-Jul 2026, heavily filtered -
-      for pipeline testing only, NOT analytically representative). The full
-      FY2024-FY2025 tables will share this exact schema.
+      Cleaned US Department of Defense prime contract transactions from
+      USAspending.gov (strings trimmed/nulled, types corrected, deduplicated
+      on the transaction key). CURRENT COVERAGE: test slice only - 204 rows,
+      action dates Apr-Jul 2026, heavily filtered, NOT analytically
+      representative. Full FY2024-FY2025 load pending; schema will not change.
+      This is the PREFERRED table for all queries.
     grain: >
       One row per contract TRANSACTION (an award or a modification). One
       contract has many transactions - count contracts via
@@ -46,7 +48,7 @@ tables:
       primary_place_of_performance_city_name: City where the work is performed
       primary_place_of_performance_state_code: State where the work is performed (2-letter)
       primary_place_of_performance_country_name: Country where the work is performed
-      prime_award_transaction_place_of_performance_cd_current: Congressional district of performance (current boundaries)
+      place_of_performance_congressional_district: Congressional district of performance (current boundaries)
       award_type: Contract form (definitive contract, delivery order, purchase order, BPA call)
       transaction_description: Free-text description of what was procured
       naics_code: Industry classification code (NAICS)

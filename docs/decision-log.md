@@ -34,4 +34,14 @@ Format per proposal §7.2: decision · alternatives considered · reason · date
 
 ---
 
-*(Next expected entries: D4 — chat interface/deployment shape.)*
+## D4 — Deployment: Cloud Run, private (authenticated) for now
+
+- **Date:** 2026-07-16
+- **Decision:** Deployed `hosted-analytics-agent` to Cloud Run (us-east1) from source via Cloud Build; runtime identity = the read-only service account + `roles/aiplatform.user` (granted with intern approval). Deployed **--no-allow-unauthenticated**: only authenticated Google identities can open it. URL: https://hosted-analytics-agent-171286699495.us-east1.run.app
+- **Alternatives considered:** public URL (--allow-unauthenticated, the setup guide's default command).
+- **Reason:** Intern chose to keep it private while the data is still the test slice; making it public later is a one-flag redeploy. Cost guards unchanged (scale-to-zero, 1 GB/query cap, rate limiter, LIVE-mode double opt-in via env vars).
+- **Verified:** 2026-07-16 — /api/meta healthy (build 23a2fde), live chat answered "174 distinct contracts" (correct) in 3.0 s from the cloud.
+
+---
+
+*(Next expected entries: D5 — full FY2024-FY2025 load & re-validation; D6 — public access decision before sponsor demo.)*
