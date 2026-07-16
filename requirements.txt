@@ -4,6 +4,10 @@ google-cloud-bigquery
 pyyaml
 python-dotenv
 
+# Web server
+fastapi
+uvicorn
+
 # Ingestion
 requests
 

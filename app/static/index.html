@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DoD Contracts Assistant</title>
+<style>
+  :root {
+    --bg: #F4F5F2; --surface: #FFFFFF; --surface-2: #ECEFEA;
+    --ink: #1C2420; --ink-soft: #5A655F; --line: #D7DCD4;
+    --green: #2F6B4F; --green-ink: #FFFFFF; --green-soft: #E3EDE7;
+    --brass: #8A6D24; --brass-soft: #F3ECD9;
+    --red: #A0402F; --red-soft: #F6E7E2;
+    --user-bubble: #2F6B4F; --user-ink: #F2F7F4;
+    --shadow: 0 1px 3px rgba(28,36,32,.08);
+    --mono: "Cascadia Code", "SF Mono", Consolas, monospace;
+    --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141917; --surface: #1E2521; --surface-2: #262E29;
+      --ink: #E4EAE4; --ink-soft: #98A49C; --line: #333D37;
+      --green: #6FB491; --green-ink: #10241A; --green-soft: #233229;
+      --brass: #CFA94E; --brass-soft: #35301E;
+      --red: #D98A76; --red-soft: #3B2922;
+      --user-bubble: #2E5B45; --user-ink: #E4F0E9;
+      --shadow: 0 1px 3px rgba(0,0,0,.4);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); display: flex; flex-direction: column;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .8rem 1.25rem; background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .logo {
+    width: 2.2rem; height: 2.2rem; border-radius: 8px; flex: none;
+    background: var(--green); color: var(--green-ink);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem;
+  }
+  .title-block { min-width: 0; }
+  .title-block h1 { font-size: 1rem; margin: 0; line-height: 1.2; }
+  .title-block p { margin: 0; font-size: .74rem; color: var(--ink-soft); }
+  .spacer { flex: 1; }
+  .pill {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .08em;
+    text-transform: uppercase; padding: .28rem .6rem; border-radius: 99px;
+    border: 1px solid var(--line); color: var(--ink-soft); white-space: nowrap;
+  }
+  .pill.live { background: var(--green-soft); color: var(--green); border-color: transparent; }
+  .pill.dry  { background: var(--brass-soft); color: var(--brass); border-color: transparent; }
+  header button {
+    font: inherit; font-size: .8rem; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 8px; padding: .38rem .7rem; cursor: pointer;
+  }
+  header button:hover { border-color: var(--ink-soft); }
+
+  /* ---------- chat ---------- */
+  #chat {
+    flex: 1; overflow-y: auto; padding: 1.5rem 1rem 1rem;
+  }
+  .lane { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
+
+  .msg { display: flex; gap: .65rem; align-items: flex-end; }
+  .msg .avatar {
+    width: 1.9rem; height: 1.9rem; border-radius: 50%; flex: none;
+    background: var(--green); color: var(--green-ink);
+    display: flex; align-items: center; justify-content: center; font-size: .95rem;
+  }
+  .msg .body { max-width: 82%; }
+  .bubble {
+    padding: .75rem 1rem; border-radius: 14px; box-shadow: var(--shadow);
+    font-size: .95rem; line-height: 1.55; overflow-wrap: break-word;
+  }
+  .msg.agent .bubble { background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .msg.user { flex-direction: row-reverse; }
+  .msg.user .body { display: flex; justify-content: flex-end; }
+  .msg.user .bubble { background: var(--user-bubble); color: var(--user-ink); border-bottom-right-radius: 4px; }
+  .msg.error .bubble { background: var(--red-soft); border: 1px solid var(--red); }
+
+  .bubble p { margin: .4em 0; } .bubble p:first-child { margin-top: 0; } .bubble p:last-child { margin-bottom: 0; }
+  .bubble code { font-family: var(--mono); font-size: .84em; background: var(--surface-2); padding: .08em .35em; border-radius: 4px; }
+  .bubble pre {
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px;
+    padding: .7rem .9rem; overflow-x: auto; font-family: var(--mono); font-size: .8rem; line-height: 1.5;
+  }
+  .bubble pre code { background: none; padding: 0; }
+  .bubble table { border-collapse: collapse; margin: .5em 0; font-size: .87em; display: block; overflow-x: auto; }
+  .bubble th, .bubble td { border: 1px solid var(--line); padding: .35em .65em; text-align: left; font-variant-numeric: tabular-nums; }
+  .bubble th { background: var(--surface-2); }
+  .bubble ul, .bubble ol { margin: .4em 0; padding-left: 1.4em; }
+
+  .work {
+    margin-top: .45rem; font-size: .8rem;
+  }
+  .work summary {
+    cursor: pointer; color: var(--ink-soft); font-family: var(--mono); font-size: .72rem;
+    letter-spacing: .06em; text-transform: uppercase; user-select: none;
+  }
+  .work summary:hover { color: var(--green); }
+  .work .steps { margin-top: .5rem; display: flex; flex-direction: column; gap: .4rem; }
+  .work .step {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .55rem .8rem;
+  }
+  .work .step .tool { font-family: var(--mono); font-size: .7rem; color: var(--brass); text-transform: uppercase; letter-spacing: .06em; }
+  .work .step pre { margin: .4rem 0 0; white-space: pre-wrap; font-family: var(--mono); font-size: .76rem; background: var(--surface-2); border-radius: 6px; padding: .5rem .65rem; overflow-x: auto; }
+  .work .step .stat { color: var(--ink-soft); font-size: .76rem; margin-top: .3rem; }
+
+  .meta-line { font-size: .68rem; color: var(--ink-soft); margin-top: .35rem; font-family: var(--mono); }
+
+  /* typing indicator */
+  .typing { display: inline-flex; gap: .3rem; padding: .9rem 1.1rem; }
+  .typing span {
+    width: .45rem; height: .45rem; border-radius: 50%; background: var(--ink-soft);
+    animation: blink 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .typing span { animation: none; opacity: .6; } }
+
+  /* suggestion chips */
+  .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
+  .chip {
+    font: inherit; font-size: .82rem; color: var(--green);
+    background: var(--green-soft); border: 1px solid transparent; border-radius: 99px;
+    padding: .4rem .85rem; cursor: pointer; text-align: left;
+  }
+  .chip:hover { border-color: var(--green); }
+
+  /* ---------- composer ---------- */
+  #composer {
+    padding: .9rem 1rem 1.1rem; background: linear-gradient(to top, var(--bg) 70%, transparent);
+  }
+  .composer-inner {
+    max-width: 780px; margin: 0 auto; display: flex; gap: .6rem; align-items: flex-end;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    padding: .55rem .55rem .55rem 1rem; box-shadow: var(--shadow);
+  }
+  .composer-inner:focus-within { border-color: var(--green); }
+  textarea {
+    flex: 1; border: none; outline: none; resize: none; background: transparent;
+    font: inherit; font-size: .95rem; color: var(--ink); max-height: 9rem; line-height: 1.45;
+    padding: .35rem 0;
+  }
+  #send {
+    width: 2.6rem; height: 2.6rem; border-radius: 12px; border: none; cursor: pointer;
+    background: var(--green); color: var(--green-ink); font-size: 1.1rem; flex: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #send:disabled { opacity: .45; cursor: default; }
+  .hint { max-width: 780px; margin: .45rem auto 0; font-size: .68rem; color: var(--ink-soft); text-align: center; }
+
+  /* ---------- about drawer ---------- */
+  #about {
+    position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none;
+    align-items: center; justify-content: center; padding: 1rem; z-index: 10;
+  }
+  #about.open { display: flex; }
+  .about-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    max-width: 520px; width: 100%; padding: 1.4rem 1.5rem; box-shadow: 0 10px 40px rgba(0,0,0,.25);
+  }
+  .about-card h2 { margin: 0 0 .6rem; font-size: 1.1rem; }
+  .about-card p { font-size: .9rem; color: var(--ink-soft); margin: .4rem 0; }
+  .about-card dl { font-size: .85rem; display: grid; grid-template-columns: auto 1fr; gap: .25rem .9rem; margin: .9rem 0 0; }
+  .about-card dt { font-family: var(--mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-soft); align-self: center;}
+  .about-card dd { margin: 0; font-family: var(--mono); font-size: .8rem; }
+  .about-card .close { margin-top: 1.1rem; font: inherit; font-size: .85rem; padding: .45rem .9rem; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🛰️</div>
+  <div class="title-block">
+    <h1>DoD Contracts Assistant</h1>
+    <p>Ask about Department of Defense contract awards — no SQL needed</p>
+  </div>
+  <div class="spacer"></div>
+  <span class="pill" id="mode-pill">…</span>
+  <button id="about-btn" type="button">About this data</button>
+  <button id="reset-btn" type="button" title="Start a fresh conversation">New chat</button>
+</header>
+
+<div id="chat"><div class="lane" id="lane"></div></div>
+
+<div id="composer">
+  <div class="composer-inner">
+    <textarea id="input" rows="1" placeholder="Ask a question about DoD contracts…" aria-label="Your question"></textarea>
+    <button id="send" type="button" aria-label="Send">➤</button>
+  </div>
+  <p class="hint">Answers come from live database queries with read-only access. Enter to send · Shift+Enter for a new line</p>
+</div>
+
+<div id="about" role="dialog" aria-modal="true" aria-label="About this data">
+  <div class="about-card">
+    <h2>About this data</h2>
+    <p id="about-note">Loading…</p>
+    <p>Every answer is generated by querying the database live. The assistant can
+    read data but can never change it, each query has a hard cost cap, and you can
+    expand <b>“show my work”</b> under any answer to see the exact SQL that ran.</p>
+    <dl>
+      <dt>Mode</dt><dd id="about-mode">…</dd>
+      <dt>Model</dt><dd id="about-model">…</dd>
+      <dt>Build</dt><dd id="about-build">…</dd>
+    </dl>
+    <button class="close" type="button" onclick="document.getElementById('about').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const lane = document.getElementById("lane");
+  const chat = document.getElementById("chat");
+  const input = document.getElementById("input");
+  const send = document.getElementById("send");
+
+  let busy = false;
+  let sessionId = sessionStorage.getItem("session_id") ||
+    (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
+  sessionStorage.setItem("session_id", sessionId);
+
+  const SUGGESTIONS = [
+    "Who are the top 5 contractors by total dollars?",
+    "How does Army spending compare to Navy?",
+    "What share of contracts were fully competed?",
+    "How much went to veteran-owned small businesses?",
+  ];
+
+  /* ---------- tiny markdown renderer (bold, code, tables, lists, headings) ---------- */
+  function esc(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function inline(s) {
+    return s
+      .replace(/`([^`]+)`/g, (_, c) => "<code>" + c + "</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<i>$2</i>");
+  }
+  function renderMarkdown(text) {
+    const lines = esc(text).split("\n");
+    let html = "", i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (line.startsWith("```")) {                     // code block
+        let buf = [];
+        i++;
+        while (i < lines.length && !lines[i].startsWith("```")) buf.push(lines[i++]);
+        i++;
+        html += "<pre><code>" + buf.join("\n") + "</code></pre>";
+      } else if (/^\|.*\|\s*$/.test(line)) {            // table
+        let rows = [];
+        while (i < lines.length && /^\|.*\|\s*$/.test(lines[i])) rows.push(lines[i++]);
+        const cells = r => r.replace(/^\||\|\s*$/g, "").split("|").map(c => c.trim());
+        let t = "<table>";
+        rows.forEach((r, ri) => {
+          if (/^[\s|:-]+$/.test(r)) return;             // separator row
+          const tag = ri === 0 ? "th" : "td";
+          t += "<tr>" + cells(r).map(c => `<${tag}>` + inline(c) + `</${tag}>`).join("") + "</tr>";
+        });
+        html += t + "</table>";
+      } else if (/^#{1,4}\s/.test(line)) {
+        const lvl = Math.min(line.match(/^#+/)[0].length + 2, 5);
+        html += `<p><b>` + inline(line.replace(/^#+\s*/, "")) + `</b></p>`;
+      } else if (/^\s*[-*]\s+/.test(line)) {            // list
+        let items = [];
+        while (i < lines.length && /^\s*[-*]\s+/.test(lines[i]))
+          items.push("<li>" + inline(lines[i++].replace(/^\s*[-*]\s+/, "")) + "</li>");
+        html += "<ul>" + items.join("") + "</ul>";
+        continue;
+      } else if (line.trim() === "") {
+        html += "";
+      } else {
+        html += "<p>" + inline(line) + "</p>";
+      }
+      i++;
+    }
+    return html;
+  }
+
+  /* ---------- message helpers ---------- */
+  function scroll() { chat.scrollTop = chat.scrollHeight; }
+
+  function addUser(text) {
+    const el = document.createElement("div");
+    el.className = "msg user";
+    el.innerHTML = `<div class="body"><div class="bubble"></div></div>`;
+    el.querySelector(".bubble").textContent = text;
+    lane.appendChild(el); scroll();
+  }
+
+  function addAgent(html, opts = {}) {
+    const el = document.createElement("div");
+    el.className = "msg agent" + (opts.error ? " error" : "");
+    el.innerHTML = `<div class="avatar">🛰️</div><div class="body"><div class="bubble">${html}</div></div>`;
+    const body = el.querySelector(".body");
+
+    if (opts.toolEvents && opts.toolEvents.length) {
+      const calls = opts.toolEvents;
+      const det = document.createElement("details");
+      det.className = "work";
+      let steps = "";
+      for (let k = 0; k < calls.length; k++) {
+        const ev = calls[k];
+        if (ev.type === "call") {
+          const sql = ev.args && (ev.args.sql || ev.args.table || ev.args.dataset) || "";
+          steps += `<div class="step"><span class="tool">→ ${esc(ev.tool)}</span>` +
+                   (sql ? `<pre>${esc(sql)}</pre>` : "") + `</div>`;
+        } else {
+          const bits = [];
+          if (ev.status) bits.push(ev.status);
+          if (ev.row_count != null) bits.push(ev.row_count + " rows");
+          if (ev.bytes_display) bits.push(ev.bytes_display + " scanned");
+          if (ev.error) bits.push("error: " + ev.error);
+          steps += `<div class="step"><span class="tool">← ${esc(ev.tool)}</span>` +
+                   `<div class="stat">${esc(bits.join(" · "))}</div></div>`;
+        }
+      }
+      det.innerHTML = `<summary>Show my work (${calls.filter(c => c.type === "call").length} steps)</summary>` +
+                      `<div class="steps">${steps}</div>`;
+      body.appendChild(det);
+    }
+    if (opts.metaLine) {
+      const m = document.createElement("div");
+      m.className = "meta-line";
+      m.textContent = opts.metaLine;
+      body.appendChild(m);
+    }
+    lane.appendChild(el); scroll();
+    return el;
+  }
+
+  function addTyping() {
+    const el = document.createElement("div");
+    el.className = "msg agent";
+    el.id = "typing";
+    el.innerHTML = `<div class="avatar">🛰️</div><div class="body"><div class="bubble typing"><span></span><span></span><span></span></div></div>`;
+    lane.appendChild(el); scroll();
+  }
+  function removeTyping() { const t = document.getElementById("typing"); if (t) t.remove(); }
+
+  /* ---------- send ---------- */
+  async function ask(text) {
+    if (busy || !text.trim()) return;
+    busy = true; send.disabled = true;
+    addUser(text.trim());
+    input.value = ""; autosize();
+    addTyping();
+    try {
+      const r = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text.trim(), session_id: sessionId }),
+      });
+      const data = await r.json();
+      removeTyping();
+      if (!r.ok || !data.ok) {
+        addAgent(esc(data.error || "The server had a problem. Please try again."), { error: true });
+      } else {
+        addAgent(renderMarkdown(data.answer), {
+          toolEvents: data.tool_events,
+          metaLine: (data.duration_ms / 1000).toFixed(1) + "s · " + data.mode + " mode",
+        });
+      }
+    } catch (e) {
+      removeTyping();
+      addAgent("Couldn't reach the server — is it still running? (" + esc(String(e)) + ")", { error: true });
+    }
+    busy = false; send.disabled = false; input.focus();
+  }
+
+  /* ---------- welcome ---------- */
+  function welcome() {
+    const el = addAgent(
+      "<p><b>Hi! I'm the DoD Contracts Assistant.</b></p>" +
+      "<p>Ask me anything about Department of Defense contract awards, in plain " +
+      "English — I'll query the database and show you exactly how I got the " +
+      "answer. Try one of these to start:</p>"
+    );
+    const chips = document.createElement("div");
+    chips.className = "chips";
+    SUGGESTIONS.forEach(s => {
+      const b = document.createElement("button");
+      b.className = "chip"; b.type = "button"; b.textContent = s;
+      b.onclick = () => ask(s);
+      chips.appendChild(b);
+    });
+    el.querySelector(".bubble").appendChild(chips);
+  }
+
+  /* ---------- wiring ---------- */
+  function autosize() {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 144) + "px";
+  }
+  input.addEventListener("input", autosize);
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(input.value); }
+  });
+  send.addEventListener("click", () => ask(input.value));
+
+  document.getElementById("reset-btn").onclick = () => {
+    sessionId = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+    sessionStorage.setItem("session_id", sessionId);
+    lane.innerHTML = ""; welcome(); input.focus();
+  };
+  document.getElementById("about-btn").onclick = () =>
+    document.getElementById("about").classList.add("open");
+  document.getElementById("about").addEventListener("click", e => {
+    if (e.target.id === "about") e.target.classList.remove("open");
+  });
+
+  fetch("/api/meta").then(r => r.json()).then(m => {
+    const pill = document.getElementById("mode-pill");
+    pill.textContent = m.mode === "LIVE" ? "● live data" : "◌ dry run";
+    pill.classList.add(m.mode === "LIVE" ? "live" : "dry");
+    document.getElementById("about-note").textContent = m.dataset_note;
+    document.getElementById("about-mode").textContent = m.mode;
+    document.getElementById("about-model").textContent = m.model;
+    document.getElementById("about-build").textContent = m.build;
+  }).catch(() => {});
+
+  welcome();
+  input.focus();
+})();
+</script>
+</body>
+</html>
