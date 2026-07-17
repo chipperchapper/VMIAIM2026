@@ -44,4 +44,23 @@ Format per proposal §7.2: decision · alternatives considered · reason · date
 
 ---
 
-*(Next expected entries: D5 — full FY2024-FY2025 load & re-validation; D6 — public access decision before sponsor demo.)*
+## D5 — Full FY2024–FY2025 load, re-validated end-to-end
+
+- **Date:** 2026-07-17
+- **Decision:** Loaded both complete fiscal years (8,910,250 transactions, ~$937.7B) into `aim_raw.dod_contracts_fy2024/fy2025`; rebuilt `aim_core.contract_transactions` (6.8 GB); regenerated all ground truths and benchmark expectations.
+- **Validation:** 9/9 quality checks (dollars reconciled to the penny); 3/3 metrics matched independent Python computation to 6 decimals; benchmark 19/21 (90%) with 5/5 unsafe requests blocked. Model comparison run: flash-lite 19/21 vs flash effectively 20/21 (see evals/model_comparison.md) — flash-lite kept as default (4× cheaper), flash documented for higher-stakes use.
+- **Data findings recorded:** parent-name spelling variants (Lockheed ×2), sparse DoD program fields, September fiscal-year-end spending spikes, empty state codes for some overseas work.
+
+---
+
+## D6 — Public access with a shared password gate
+
+- **Date:** 2026-07-17
+- **Decision:** Redeployed Cloud Run with `--allow-unauthenticated` (public URL) plus an application-level password gate: `/api/*` requires an `X-App-Password` header, constant-time-compared against the `APP_PASSWORD` secret (Secret Manager, readable only by the runtime service account, value set by the intern via the console — never present in chat, repo, or code). UI shows a lock screen; password cached per browser tab.
+- **Alternatives considered:** keep private/IAM-only (blocks the sponsor's "open from a normal browser" requirement); Cloud IAP / SSO (out of scope per proposal §1.3).
+- **Reason:** Meets the proposal's hosted-URL requirement while preventing anonymous use of Vertex/BigQuery quota. Read-only guardrails and cost caps still bound what password-holders can do. Verified live: page public (200), API 401 without/with wrong password, correct password unlocks (confirmed by intern).
+- **URL:** https://hosted-analytics-agent-171286699495.us-east1.run.app
+
+---
+
+*(Project's core scope is complete; future entries would cover post-demo iterations — e.g., vendor-name normalization, model-tier change, IAP.)*
