@@ -6,13 +6,15 @@ Local run:
 
 Cloud Run runs the same app via the Dockerfile (later milestone).
 """
+import hmac
 import inspect
+import os
 import subprocess
 import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
@@ -24,6 +26,17 @@ from .config import CONFIG, logger
 
 APP_NAME = "hosted_analytics_agent"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+# Shared access password (set via Secret Manager -> env on Cloud Run).
+# When unset (e.g. local dev), the gate is disabled.
+APP_PASSWORD = os.getenv("APP_PASSWORD", "")
+
+
+async def require_password(x_app_password: str = Header(default="")) -> None:
+    if not APP_PASSWORD:
+        return  # gate disabled (local dev)
+    if not hmac.compare_digest(x_app_password, APP_PASSWORD):
+        raise HTTPException(status_code=401, detail="Password required")
 
 
 def _build_id() -> str:
@@ -62,7 +75,7 @@ async def index():
 
 
 @app.get("/api/meta")
-async def meta() -> dict[str, Any]:
+async def meta(_: None = Depends(require_password)) -> dict[str, Any]:
     return {
         "mode": CONFIG.safety_switch,
         "model": CONFIG.model,
@@ -78,7 +91,7 @@ async def meta() -> dict[str, Any]:
 
 
 @app.post("/api/chat")
-async def chat(req: ChatRequest) -> dict[str, Any]:
+async def chat(req: ChatRequest, _: None = Depends(require_password)) -> dict[str, Any]:
     user_id = "web"
     started = time.time()
 

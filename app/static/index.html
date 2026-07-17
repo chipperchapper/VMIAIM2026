@@ -160,6 +160,31 @@
   #send:disabled { opacity: .45; cursor: default; }
   .hint { max-width: 780px; margin: .45rem auto 0; font-size: .68rem; color: var(--ink-soft); text-align: center; }
 
+  /* ---------- lock screen ---------- */
+  #lock {
+    position: fixed; inset: 0; background: var(--bg); display: none;
+    align-items: center; justify-content: center; padding: 1rem; z-index: 20;
+  }
+  #lock.open { display: flex; }
+  .lock-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    max-width: 400px; width: 100%; padding: 2rem; text-align: center; box-shadow: var(--shadow);
+  }
+  .lock-card .logo { margin: 0 auto 1rem; width: 3rem; height: 3rem; font-size: 1.5rem; border-radius: 12px; }
+  .lock-card h2 { margin: 0 0 .4rem; font-size: 1.15rem; }
+  .lock-card p { font-size: .88rem; color: var(--ink-soft); margin: 0 0 1.2rem; }
+  .lock-card form { display: flex; gap: .5rem; }
+  .lock-card input {
+    flex: 1; font: inherit; padding: .6rem .8rem; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); outline: none;
+  }
+  .lock-card input:focus { border-color: var(--green); }
+  .lock-card button {
+    font: inherit; padding: .6rem 1rem; border-radius: 10px; border: none;
+    background: var(--green); color: var(--green-ink); cursor: pointer;
+  }
+  .lock-error { color: var(--red); font-size: .8rem; margin-top: .7rem; min-height: 1.1em; }
+
   /* ---------- about drawer ---------- */
   #about {
     position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none;
@@ -202,6 +227,19 @@
   <p class="hint">Answers come from live database queries with read-only access. Enter to send · Shift+Enter for a new line</p>
 </div>
 
+<div id="lock" role="dialog" aria-modal="true" aria-label="Password required">
+  <div class="lock-card">
+    <div class="logo">🛰️</div>
+    <h2>DoD Contracts Assistant</h2>
+    <p>This demo is password-protected. Enter the access password to continue.</p>
+    <form id="lock-form">
+      <input id="lock-input" type="password" placeholder="Access password" autocomplete="current-password" aria-label="Access password">
+      <button type="submit">Enter</button>
+    </form>
+    <div class="lock-error" id="lock-error"></div>
+  </div>
+</div>
+
 <div id="about" role="dialog" aria-modal="true" aria-label="About this data">
   <div class="about-card">
     <h2>About this data</h2>
@@ -229,6 +267,38 @@
   let sessionId = sessionStorage.getItem("session_id") ||
     (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()));
   sessionStorage.setItem("session_id", sessionId);
+
+  /* ---------- password gate ---------- */
+  let appPw = sessionStorage.getItem("app_pw") || "";
+  const lock = document.getElementById("lock");
+  const lockInput = document.getElementById("lock-input");
+  const lockError = document.getElementById("lock-error");
+
+  function authHeaders(extra) {
+    const h = extra || {};
+    if (appPw) h["X-App-Password"] = appPw;
+    return h;
+  }
+  function showLock(msg) {
+    lock.classList.add("open");
+    lockError.textContent = msg || "";
+    lockInput.focus();
+  }
+  document.getElementById("lock-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    appPw = lockInput.value;
+    const r = await fetch("/api/meta", { headers: authHeaders() }).catch(() => null);
+    if (r && r.ok) {
+      sessionStorage.setItem("app_pw", appPw);
+      lock.classList.remove("open");
+      lockInput.value = "";
+      applyMeta(await r.json());
+      input.focus();
+    } else {
+      appPw = "";
+      showLock("That password didn't work — try again.");
+    }
+  });
 
   const SUGGESTIONS = [
     "Who are the top 5 contractors by total dollars?",
@@ -359,9 +429,16 @@
     try {
       const r = await fetch("/api/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ message: text.trim(), session_id: sessionId }),
       });
+      if (r.status === 401) {
+        removeTyping();
+        busy = false; send.disabled = false;
+        input.value = text;  // give the question back
+        showLock("Session expired — enter the password again.");
+        return;
+      }
       const data = await r.json();
       removeTyping();
       if (!r.ok || !data.ok) {
@@ -420,15 +497,20 @@
     if (e.target.id === "about") e.target.classList.remove("open");
   });
 
-  fetch("/api/meta").then(r => r.json()).then(m => {
+  function applyMeta(m) {
     const pill = document.getElementById("mode-pill");
     pill.textContent = m.mode === "LIVE" ? "● live data" : "◌ dry run";
+    pill.classList.remove("live", "dry");
     pill.classList.add(m.mode === "LIVE" ? "live" : "dry");
     document.getElementById("about-note").textContent = m.dataset_note;
     document.getElementById("about-mode").textContent = m.mode;
     document.getElementById("about-model").textContent = m.model;
     document.getElementById("about-build").textContent = m.build;
-  }).catch(() => {});
+  }
+  fetch("/api/meta", { headers: authHeaders() }).then(r => {
+    if (r.status === 401) { showLock(); return null; }
+    return r.json();
+  }).then(m => { if (m) applyMeta(m); }).catch(() => {});
 
   welcome();
   input.focus();
