@@ -7,15 +7,15 @@
 --   3. naics_code: INT64 -> STRING (codes are identifiers, not quantities)
 --   4. Deduplicate on contract_transaction_unique_key (keep latest action_date)
 --
--- SOURCE: currently the test slice. After the full FY2024-FY2025 load,
--- replace the source CTE with:
---     SELECT * FROM aim_raw.dod_contracts_fy2024
---     UNION ALL SELECT * FROM aim_raw.dod_contracts_fy2025
--- and re-run. Grain and all downstream views are unchanged.
+-- SOURCE: full FY2024 + FY2025 tables (switched from the test slice on
+-- 2026-07-16 after the full load; test slice remains in
+-- aim_raw.dod_contracts_test for reference).
 
 CREATE OR REPLACE TABLE aim_core.contract_transactions AS
 WITH source AS (
-  SELECT * FROM aim_raw.dod_contracts_test
+  SELECT * FROM aim_raw.dod_contracts_fy2024
+  UNION ALL
+  SELECT * FROM aim_raw.dod_contracts_fy2025
 ),
 cleaned AS (
   SELECT

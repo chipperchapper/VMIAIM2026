@@ -5,7 +5,7 @@
 
 metrics:
   competition_rate:
-    status: validated (test slice, 2026-07-16 - see evals/metric_validation.md)
+    status: validated (full FY2024-FY2025 data, 2026-07-17 - see evals/metric_validation.md)
     business_question: What share of contract dollars was awarded competitively?
     definition: >
       Competitively-obligated dollars divided by total obligated dollars.
@@ -20,7 +20,7 @@ metrics:
     limitations: Dollar-weighted; a count-weighted variant differs. Not yet validated.
 
   small_business_share:
-    status: validated (test slice, 2026-07-16 - see evals/metric_validation.md)
+    status: validated (full FY2024-FY2025 data, 2026-07-17 - see evals/metric_validation.md)
     business_question: What share of obligated dollars went to small businesses?
     definition: >
       Dollars where contracting_officers_determination_of_business_size =
@@ -34,7 +34,7 @@ metrics:
     limitations: Not yet validated against SBA scorecard methodology.
 
   contractor_concentration_hhi:
-    status: validated (test slice, 2026-07-16 - see evals/metric_validation.md)
+    status: validated (full FY2024-FY2025 data, 2026-07-17 - see evals/metric_validation.md)
     business_question: >
       How concentrated is DoD spending among parent companies? (Herfindahl-
       Hirschman Index: 10000 = one company gets everything; near 0 = spread

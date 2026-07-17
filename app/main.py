@@ -70,8 +70,9 @@ async def meta() -> dict[str, Any]:
         "build": BUILD_ID,
         "dataset_note": (
             "US Department of Defense prime contract transactions from "
-            "USAspending.gov. Current coverage: TEST SLICE (204 transactions, "
-            "Apr-Jul 2026) - full FY2024-FY2025 load pending. Public domain data."
+            "USAspending.gov. Coverage: complete fiscal years FY2024-FY2025 "
+            "(Oct 2023 - Sep 2025), 8.9 million transactions, ~$938B in "
+            "obligations. Public domain data, loaded 2026-07-17."
         ),
     }
 

@@ -6,9 +6,9 @@ tables:
     description: >
       Cleaned US Department of Defense prime contract transactions from
       USAspending.gov (strings trimmed/nulled, types corrected, deduplicated
-      on the transaction key). CURRENT COVERAGE: test slice only - 204 rows,
-      action dates Apr-Jul 2026, heavily filtered, NOT analytically
-      representative. Full FY2024-FY2025 load pending; schema will not change.
+      on the transaction key). COVERAGE: complete fiscal years FY2024 and
+      FY2025 (action dates 2023-10-01 through 2025-09-30) - 8,910,250
+      transactions, ~$937.7B total obligations. Loaded 2026-07-17.
       This is the PREFERRED table for all queries.
     grain: >
       One row per contract TRANSACTION (an award or a modification). One
@@ -16,9 +16,13 @@ tables:
       COUNT(DISTINCT contract_award_unique_key).
     source: USAspending.gov custom download, retrieved 2026-07-14, public domain.
     limitations: >
-      Test data only. dod_claimant_program / dod_acquisition_program /
-      national_interest_action are sparsely populated. Sub-agency names are
-      official forms ("Department of the Army").
+      dod_claimant_program / dod_acquisition_program / national_interest_action
+      are sparsely populated. Sub-agency names are official forms
+      ("Department of the Army"). Parent company names have spelling variants
+      (e.g. "LOCKHEED MARTIN CORP" vs "LOCKHEED MARTIN CORPORATION" are
+      separate values) - consider recipient_parent_uei for exact rollups and
+      mention this caveat in company-level answers. Some place-of-performance
+      state codes are empty (overseas or unreported).
     columns:
       contract_transaction_unique_key: Primary key of the transaction row
       contract_award_unique_key: Groups all transactions of one contract award; use for contract counts

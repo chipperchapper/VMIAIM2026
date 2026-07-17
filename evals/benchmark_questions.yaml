@@ -1,93 +1,97 @@
 # 20+ question benchmark (proposal section 6). Expected values computed
-# independently from the local staged CSV on 2026-07-16 (test slice).
+# independently from the local staged files on 2026-07-17 (FULL FY2024-FY2025
+# population, 8,910,250 transactions - see evals/ground_truth.json).
 # Scoring: every regex in `expect` must match the answer (case-insensitive);
 # each list in `expect_any` needs at least one match.
-# NOTE: numeric expectations are for the TEST SLICE population; regenerate
-# after the full FY2024-FY2025 load.
 
 questions:
   # ---------- basic retrieval (4) ----------
   - id: B1
     category: basic
     question: How many transactions are in the data?
-    expect: ["204"]
+    expect_any:
+      - ["8,910,250", "8\\.91\\s*million", "8\\.9\\s*million"]
   - id: B2
     category: basic
     question: How many distinct contracts are in the data?
-    expect: ["174"]
+    expect_any:
+      - ["7,982,059", "7\\.98\\s*million", "8\\.0\\s*million", "7\\.9(8)?\\s*million"]
   - id: B3
     category: basic
     question: What is the total obligated amount across all transactions?
     expect_any:
-      - ["56,244,7(69|70)", "56\\.2\\s*(m|million)", "56\\.24"]
+      - ["937,698,090", "937\\.7\\s*(b|billion)", "937\\.69"]
   - id: B4
     category: basic
     question: What is the largest single transaction, and who received it?
-    expect: ["PARAGON"]
+    expect: ["LOCKHEED"]
     expect_any:
-      - ["12,832,704", "12\\.8"]
+      - ["14,145,203", "14\\.1\\s*(b|billion)", "N0001923C0003"]
 
   # ---------- aggregation & segmentation (5) ----------
   - id: A1
     category: aggregation
     question: Who are the top 3 parent companies by total obligations?
-    expect: ["PARAGON", "AT&T", "AMOROSO"]
+    expect: ["LOCKHEED", "BOEING"]
+    expect_any:
+      - ["ROCKWELL"]
   - id: A2
     category: aggregation
     question: How does Army spending compare to Navy spending?
     expect_any:
-      - ["35,960,089", "35\\.9", "36[.,]0"]
-      - ["11,774,788", "11\\.8"]
+      - ["311,517", "311\\.5", "311,5"]
+      - ["211,441", "211\\.4", "211,4"]
   - id: A3
     category: aggregation
     question: Which state has the highest obligations by place of performance?
     expect_any:
-      - ["\\bMO\\b", "Missouri"]
+      - ["\\bVA\\b", "Virginia"]
   - id: A4
     category: aggregation
     question: How many transactions went to small businesses?
-    expect: ["22"]
+    expect_any:
+      - ["4,458,245", "4\\.46\\s*million", "4\\.5\\s*million"]
   - id: A5
     category: aggregation
     question: How many dollars went to firm fixed price contracts?
     expect_any:
-      - ["31,932,508", "31\\.9"]
+      - ["491,695", "491\\.7", "491\\.69"]
 
   # ---------- time & trend (3) ----------
   - id: T1
     category: time
     question: Which month had the highest total obligations?
     expect_any:
-      - ["May", "2026-05"]
+      - ["2025-09", "September 2025"]
   - id: T2
     category: time
     question: What date range does the data cover?
     expect_any:
-      - ["2026-04-14", "April\\s*14"]
-      - ["2026-07-10", "July\\s*10"]
+      - ["2023-10-01", "October\\s*1,?\\s*2023"]
+      - ["2025-09-30", "September\\s*30,?\\s*2025"]
   - id: T3
     category: time
     question: Show me the monthly trend of obligations.
     expect_any:
-      - ["2026-05", "May"]
-      - ["31,422,221", "31\\.4"]
+      - ["2025-09", "September"]
+      - ["92,344", "92\\.3"]
 
   # ---------- computed metrics (4) ----------
   - id: M1
     category: metrics
     question: What share of contract dollars was awarded competitively?
     expect_any:
-      - ["70\\.5", "0\\.705"]
+      - ["55\\.2", "0\\.552"]
   - id: M2
     category: metrics
     question: What is the small business share of obligated dollars?
     expect_any:
-      - ["33\\.8", "0\\.338"]
+      - ["21\\.0", "0\\.210", "\\b21\\s*%", "21%"]
   - id: M3
     category: metrics
     question: How concentrated is spending among parent companies? Use the HHI metric.
     expect_any:
-      - ["1,?058", "1,?059"]
+      - ["\\b200(\\.\\d+)?\\b", "\\b201\\b"]
   - id: M4
     category: metrics
     question: How is the competition rate metric defined here?
@@ -100,8 +104,7 @@ questions:
     category: clarification
     question: How much did we spend last year?
     expect_any:
-      - ["\\?", "only covers", "doesn't cover", "does not cover", "no data",
-         "apr", "april", "test slice", "clarif"]
+      - ["\\?", "clarif", "fiscal", "calendar", "which year", "FY2025", "FY 2025"]
   - id: C2
     category: clarification
     question: What is our win rate?

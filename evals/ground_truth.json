@@ -1,0 +1,157 @@
+{
+  "generated_at": "2026-07-17T13:33:24.822012+00:00",
+  "files": [
+    "FY2024_097_Contracts_Full_20260706_1.csv.gz",
+    "FY2024_097_Contracts_Full_20260706_2.csv.gz",
+    "FY2024_097_Contracts_Full_20260706_3.csv.gz",
+    "FY2024_097_Contracts_Full_20260706_4.csv.gz",
+    "FY2024_097_Contracts_Full_20260706_5.csv.gz",
+    "FY2025_097_Contracts_Full_20260706_1.csv.gz",
+    "FY2025_097_Contracts_Full_20260706_2.csv.gz",
+    "FY2025_097_Contracts_Full_20260706_3.csv.gz",
+    "FY2025_097_Contracts_Full_20260706_4.csv.gz",
+    "FY2025_097_Contracts_Full_20260706_5.csv.gz"
+  ],
+  "transactions": 8910250,
+  "distinct_contracts": 7982059,
+  "total_obligations": 937698090349.31,
+  "top_parents": [
+    [
+      "LOCKHEED MARTIN CORP",
+      95547957376.66
+    ],
+    [
+      "ROCKWELL COLLINS AUSTRALIA PTY LIMITED",
+      55286878321.57
+    ],
+    [
+      "THE BOEING COMPANY",
+      43994694518.45
+    ],
+    [
+      "LOCKHEED MARTIN CORPORATION",
+      26615846907.32
+    ],
+    [
+      "ELECTRIC BOAT CORPORATION",
+      24966862006.14
+    ]
+  ],
+  "sub_agencies": [
+    [
+      "Department of the Navy",
+      311517634816.5
+    ],
+    [
+      "Department of the Army",
+      211441493790.65
+    ],
+    [
+      "Department of the Air Force",
+      198324926453.87
+    ],
+    [
+      "Defense Logistics Agency",
+      109053853375.45
+    ],
+    [
+      "Defense Health Agency",
+      37060305000.22
+    ],
+    [
+      "Missile Defense Agency",
+      17546292857.78
+    ],
+    [
+      "Defense Information Systems Agency",
+      14266323360.11
+    ],
+    [
+      "USTRANSCOM",
+      9971577647.49
+    ],
+    [
+      "U.S. Special Operations Command",
+      9227224658.91
+    ],
+    [
+      "Washington Headquarters Services",
+      5325572503.51
+    ]
+  ],
+  "top_pop_states": [
+    [
+      "VA",
+      103573308010.69
+    ],
+    [
+      "TX",
+      99991351464.57
+    ],
+    [
+      "CA",
+      77926648075.43
+    ],
+    [
+      "CT",
+      54039732505.7
+    ],
+    [
+      "",
+      51588593750.11
+    ]
+  ],
+  "monthly": {
+    "2023-10": 22833443139.0,
+    "2023-11": 29792665454.94,
+    "2023-12": 40561099690.32,
+    "2024-01": 22792257460.36,
+    "2024-02": 27018895413.53,
+    "2024-03": 33423666860.74,
+    "2024-04": 32491711437.04,
+    "2024-05": 42237138413.08,
+    "2024-06": 37340294839.76,
+    "2024-07": 42295556181.36,
+    "2024-08": 37038253201.34,
+    "2024-09": 78170697614.9,
+    "2024-10": 29065612867.88,
+    "2024-11": 32460223749.06,
+    "2024-12": 41718558904.11,
+    "2025-01": 29735154870.37,
+    "2025-02": 30069042193.42,
+    "2025-03": 37313298567.69,
+    "2025-04": 37528839025.3,
+    "2025-05": 35634584205.37,
+    "2025-06": 39556241936.0,
+    "2025-07": 43198535989.23,
+    "2025-08": 43077919451.26,
+    "2025-09": 92344398883.19
+  },
+  "fiscal_year_dollars": {
+    "2024": 445995679706.4,
+    "2025": 491702410642.84
+  },
+  "fiscal_year_rows": {
+    "2024": 4420520,
+    "2025": 4489730
+  },
+  "date_range": [
+    "2023-10-01",
+    "2025-09-30"
+  ],
+  "largest_transaction": {
+    "amount": 14145203547.0,
+    "piid": "N0001923C0003",
+    "parent": "LOCKHEED MARTIN CORP"
+  },
+  "full_open_transactions": 5792611,
+  "small_business_transactions": 4458245,
+  "firm_fixed_price_dollars": 491695237146.6,
+  "veteran_owned_dollars": 36522512778.23,
+  "woman_owned_dollars": 36345205754.32,
+  "metrics": {
+    "competition_rate": 0.5523771820238257,
+    "small_business_share": 0.21049545587017762,
+    "contractor_concentration_hhi": 200.53547632743502
+  }
+}

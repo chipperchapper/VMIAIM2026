@@ -1,0 +1,94 @@
+{
+  "dataset": "USAspending DoD prime contract transactions",
+  "license": "US Government work - public domain",
+  "retrieved_at": "2026-07-17T12:36:52.719308+00:00",
+  "columns_kept": 62,
+  "fiscal_years": {
+    "2024": {
+      "source_url": "https://files.usaspending.gov/award_data_archive/FY2024_097_Contracts_Full_20260706.zip",
+      "archive_file": "FY2024_097_Contracts_Full_20260706.zip",
+      "archive_bytes": 1108053330,
+      "parts": [
+        {
+          "source_member": "FY2024_097_Contracts_Full_20260706_1.csv",
+          "staged_file": "FY2024_097_Contracts_Full_20260706_1.csv.gz",
+          "rows": 1000000,
+          "verified_all_dod": true,
+          "staged_bytes": 112459484
+        },
+        {
+          "source_member": "FY2024_097_Contracts_Full_20260706_2.csv",
+          "staged_file": "FY2024_097_Contracts_Full_20260706_2.csv.gz",
+          "rows": 1000000,
+          "verified_all_dod": true,
+          "staged_bytes": 111841284
+        },
+        {
+          "source_member": "FY2024_097_Contracts_Full_20260706_3.csv",
+          "staged_file": "FY2024_097_Contracts_Full_20260706_3.csv.gz",
+          "rows": 1000000,
+          "verified_all_dod": true,
+          "staged_bytes": 108931927
+        },
+        {
+          "source_member": "FY2024_097_Contracts_Full_20260706_4.csv",
+          "staged_file": "FY2024_097_Contracts_Full_20260706_4.csv.gz",
+          "rows": 1000000,
+          "verified_all_dod": true,
+          "staged_bytes": 107321506
+        },
+        {
+          "source_member": "FY2024_097_Contracts_Full_20260706_5.csv",
+          "staged_file": "FY2024_097_Contracts_Full_20260706_5.csv.gz",
+          "rows": 420520,
+          "verified_all_dod": true,
+          "staged_bytes": 43154739
+        }
+      ],
+      "total_rows": 4420520
+    },
+    "2025": {
+      "source_url": "https://files.usaspending.gov/award_data_archive/FY2025_097_Contracts_Full_20260706.zip",
+      "archive_file": "FY2025_097_Contracts_Full_20260706.zip",
+      "archive_bytes": 1130913708,
+      "parts": [
+        {
+          "source_member": "FY2025_097_Contracts_Full_20260706_1.csv",
+          "staged_file": "FY2025_097_Contracts_Full_20260706_1.csv.gz",
+          "rows": 1000000,
+          "verified_all_dod": true,
+          "staged_bytes": 116207951
+        },
+        {
+          "source_member": "FY2025_097_Contracts_Full_20260706_2.csv",
+          "staged_file": "FY2025_097_Contracts_Full_20260706_2.csv.gz",
+          "rows": 1000000,
+          "verified_all_dod": true,
+          "staged_bytes": 112318340
+        },
+        {
+          "source_member": "FY2025_097_Contracts_Full_20260706_3.csv",
+          "staged_file": "FY2025_097_Contracts_Full_20260706_3.csv.gz",
+          "rows": 1000000,
+          "verified_all_dod": true,
+          "staged_bytes": 107987107
+        },
+        {
+          "source_member": "FY2025_097_Contracts_Full_20260706_4.csv",
+          "staged_file": "FY2025_097_Contracts_Full_20260706_4.csv.gz",
+          "rows": 1000000,
+          "verified_all_dod": true,
+          "staged_bytes": 104743593
+        },
+        {
+          "source_member": "FY2025_097_Contracts_Full_20260706_5.csv",
+          "staged_file": "FY2025_097_Contracts_Full_20260706_5.csv.gz",
+          "rows": 489730,
+          "verified_all_dod": true,
+          "staged_bytes": 49850794
+        }
+      ],
+      "total_rows": 4489730
+    }
+  }
+}

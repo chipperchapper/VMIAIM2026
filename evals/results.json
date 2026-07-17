@@ -5,9 +5,9 @@
     "question": "How many transactions are in the data?",
     "passed": true,
     "notes": [],
-    "answer": "There are 204 transactions in the data.",
+    "answer": "There are 8,910,250 transactions in the data.",
     "tool_calls": 1,
-    "seconds": 14.3
+    "seconds": 12.7
   },
   {
     "id": "B2",
@@ -15,9 +15,9 @@
     "question": "How many distinct contracts are in the data?",
     "passed": true,
     "notes": [],
-    "answer": "There are 174 distinct contracts in the dataset.",
+    "answer": "The dataset contains 7,982,059 distinct contracts.",
     "tool_calls": 1,
-    "seconds": 13.3
+    "seconds": 12.8
   },
   {
     "id": "B3",
@@ -25,9 +25,9 @@
     "question": "What is the total obligated amount across all transactions?",
     "passed": true,
     "notes": [],
-    "answer": "The total obligated amount across all transactions is $56,244,769.77. This sum includes both positive obligations and negative deobligations.\n\nHere's the SQL query used:\n```sql\nSELECT SUM(federal_action_obligation)\nFROM aim_core.contract_transactions\n```",
+    "answer": "The total obligated amount across all transactions is $937,698,090,349.24. This includes both obligations and deobligations.\n\n**Method:**\n- Sum of `federal_action_obligation` from the `aim_core.contract_transactions` table.\n- Negative values (deobligations) were included in the sum.\n\n**SQL:**\n```sql\nSELECT SUM(federal_action_obligation) AS total_obligated_amount\nFROM aim_core.contract_transactions\n```",
     "tool_calls": 1,
-    "seconds": 10.5
+    "seconds": 11.2
   },
   {
     "id": "B4",
@@ -35,9 +35,9 @@
     "question": "What is the largest single transaction, and who received it?",
     "passed": true,
     "notes": [],
-    "answer": "The largest single transaction was for $12,832,704.92, awarded to PARAGON PROFESSIONAL SERVICES LLC under award ID W912P926FA114. This is based on the federal_action_obligation for individual transactions.",
+    "answer": "The largest single transaction was $14,145,203,547.00, awarded to LOCKHEED MARTIN CORPORATION.",
     "tool_calls": 1,
-    "seconds": 40.5
+    "seconds": 10.5
   },
   {
     "id": "A1",
@@ -45,9 +45,9 @@
     "question": "Who are the top 3 parent companies by total obligations?",
     "passed": true,
     "notes": [],
-    "answer": "The top 3 parent companies by total obligations are:\n\n1.  **PARAGON PROFESSIONAL SERVICES LLC**: $12,832,704.92\n2.  **AT&T INC.**: $7,002,023.86\n3.  **S. J. AMOROSO CONSTRUCTION CO., LLC**: $6,833,185.00\n\nThis is based on the sum of `federal_action_obligation` for each `recipient_parent_name` in the `aim_core.contract_transactions` table. The query considered all transactions, including deobligations (negative obligations), and summed them to get the net total for each parent company.",
+    "answer": "The top 3 parent companies by total obligations are Lockheed Martin Corp, Rockwell Collins Australia Pty Limited, and The Boeing Company.\n\nHere's a breakdown of the obligations:\n\n| recipient_parent_name      | total_obligations |\n| :------------------------- | :---------------- |\n| LOCKHEED MARTIN CORP       | $95,547,957,376.66 |\n| ROCKWELL COLLINS AUSTRALIA PTY LIMITED | $55,286,878,321.57 |\n| THE BOEING COMPANY         | $43,994,694,518.45 |\n\n**Method:**\n- Summed `federal_action_obligation` for each `recipient_parent_name`.\n- Ordered the results in descending order of total obligations.\n- Limited the output to the top 3.\n\n**Assumptions/Caveats:**\n- This query includes both positive obligations and deobligations (negative amounts). To get net spending, one would sum `federal_action_obligation`.\n- Parent company names may have variations in spelling or formatting, which could affect rollups. We used the `recipient_parent_name` as provided in the data.\n- This data covers FY2024 and FY2025, as of July 17, 2026.\n\n```sql\nSELECT\n    recipient_parent_name,\n    SUM(federal_action_obligation) AS total_obligations\nFROM\n    aim_core.contract_transactions\nGROUP BY\n    recipient_parent_name\nORDER BY\n    total_obligations DESC\nLIMIT 3\n```",
     "tool_calls": 1,
-    "seconds": 39.4
+    "seconds": 12.8
   },
   {
     "id": "A2",
@@ -55,21 +55,19 @@
     "question": "How does Army spending compare to Navy spending?",
     "passed": true,
     "notes": [],
-    "answer": "The Department of the Army has obligated $35,960,089.39, while the Department of the Navy has obligated $11,774,788.37 in the current dataset.\n\n**Method:**\n- Summed `federal_action_obligation` for each service.\n- Filtered for 'Department of the Army' and 'Department of the Navy' in `awarding_sub_agency_name`.\n- Used `action_date` from April to July 2026 for this analysis.\n- Included negative obligations (deobligations) in the sum, as they represent adjustments to previously obligated funds.\n\n**SQL:**\n```sql\nSELECT\n    awarding_sub_agency_name,\n    SUM(federal_action_obligation) AS total_obligation\nFROM\n    aim_core.contract_transactions\nWHERE\n    awarding_sub_agency_name IN ('Department of the Army', 'Department of the Navy')\nGROUP BY\n    awarding_sub_agency_name\nORDER BY\n    total_obligation DESC\n```\n**Caveats:**\n- The dataset is a small test slice and not representative of overall spending.\n- Only includes data from April to July 2026.",
+    "answer": "The Department of the Navy has obligated more funds than the Department of the Army in FY2024 and FY2025.\n\nThe Navy has obligated $311,517,634,816.49, while the Army has obligated $211,441,493,790.65.\n\nThis is based on the sum of `federal_action_obligation` for all transactions where the `awarding_sub_agency_name` was either \"Department of the Navy\" or \"Department of the Army\", for fiscal years 2024 and 2025. Negative obligations (deobligations) were included in this sum.\n\n```sql\nSELECT\n  awarding_sub_agency_name,\n  SUM(federal_action_obligation) AS total_obligation\nFROM\n  aim_core.contract_transactions\nWHERE\n  awarding_sub_agency_name IN (\n    \"Department of the Army\",\n    \"Department of the Navy\"\n  )\n  AND action_date_fiscal_year IN (2024, 2025)\nGROUP BY\n  awarding_sub_agency_name\nORDER BY\n  total_obligation DESC\n```",
     "tool_calls": 1,
-    "seconds": 42.4
+    "seconds": 13.4
   },
   {
     "id": "A3",
     "category": "aggregation",
     "question": "Which state has the highest obligations by place of performance?",
-    "passed": false,
-    "notes": [
-      "_ResourceExhaustedError: \nOn how to mitigate this issue, please refer to:\n\nhttps://google.github.io/adk-docs/agents/models/google-gemini/#error-code-429-resource_exhausted\n\n\n429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'Resource exhausted. Please try again later. Please refer to https://cloud.google.com/vertex-ai/generative-ai/docs/error-code-429 for more details.', 'status': 'RESOURCE_EXHAUSTED'}}"
-    ],
-    "answer": "",
-    "tool_calls": 0,
-    "seconds": 194.2
+    "passed": true,
+    "notes": [],
+    "answer": "The state with the highest obligations by place of performance is Virginia (VA), with a total of $103,573,308,010.68.",
+    "tool_calls": 1,
+    "seconds": 11.9
   },
   {
     "id": "A4",
@@ -77,9 +75,9 @@
     "question": "How many transactions went to small businesses?",
     "passed": true,
     "notes": [],
-    "answer": "There were 22 transactions that went to small businesses.",
+    "answer": "The total number of transactions that went to small businesses is 4,458,245.",
     "tool_calls": 1,
-    "seconds": 11.9
+    "seconds": 10.7
   },
   {
     "id": "A5",
@@ -87,57 +85,51 @@
     "question": "How many dollars went to firm fixed price contracts?",
     "passed": true,
     "notes": [],
-    "answer": "This query identified $31,932,508.50 in federal action obligations for firm fixed price contracts.\n\nThis total includes both obligations and deobligations.\n\n```sql\nSELECT SUM(federal_action_obligation)\nFROM aim_core.contract_transactions\nWHERE type_of_contract_pricing = 'FIRM FIXED PRICE'\n```",
+    "answer": "The total dollar amount obligated for firm fixed price contracts is $491,695,237,146.59.\n\n**Method:**\n- Summed `federal_action_obligation` for all transactions where `type_of_contract_pricing` was 'FIRM FIXED PRICE'.\n- This sum includes both obligations and deobligations (negative `federal_action_obligation` values).\n\n**Assumptions/Caveats:**\n- The `type_of_contract_pricing` field is assumed to be accurately populated.\n- This represents the total value of transactions, not necessarily the net value of contracts.\n\n**SQL Query:**\n```sql\nSELECT SUM(federal_action_obligation)\nFROM aim_core.contract_transactions\nWHERE type_of_contract_pricing = 'FIRM FIXED PRICE'\n```",
     "tool_calls": 1,
-    "seconds": 94.4
+    "seconds": 12.4
   },
   {
     "id": "T1",
     "category": "time",
     "question": "Which month had the highest total obligations?",
-    "passed": true,
-    "notes": [],
-    "answer": "May 2026 had the highest total obligations, with $31,422,221.86.\n\n**Method:**\n- Aggregated `federal_action_obligation` by calendar month using `DATE_TRUNC(action_date, MONTH)`.\n- Sorted the results in descending order of total obligations and selected the top month.\n- Included all obligations, summing positive and negative `federal_action_obligation` values.\n\n**Assumptions/Caveats:**\n- The `aim_core.contract_transactions` table contains a test slice of data and is not representative of full contract award activity.\n- Obligations in the current data are only for April-July 2026.\n\n**SQL:**\n```sql\nSELECT DATE_TRUNC(action_date, MONTH) AS month, SUM(federal_action_obligation) AS total_obligations\nFROM aim_core.contract_transactions\nGROUP BY month\nORDER BY total_obligations DESC\nLIMIT 1\n```",
+    "passed": false,
+    "notes": [
+      "no match in any-of ['2025-09', 'September 2025']"
+    ],
+    "answer": "I can tell you which month had the highest total obligations.\n\nThe month with the highest total obligations was September, with approximately $170.5 billion in obligations.\n\n**Method:**\n- We summed the `federal_action_obligation` for each month.\n- Negative obligations (deobligations) were included in this sum.\n- The month with the highest sum was identified.\n\n**SQL Query:**\n```sql\nSELECT EXTRACT(MONTH FROM action_date) AS month, SUM(federal_action_obligation) AS total_obligations\nFROM aim_core.contract_transactions\nGROUP BY month\nORDER BY total_obligations DESC\nLIMIT 1\n```",
     "tool_calls": 1,
-    "seconds": 13.7
+    "seconds": 13.2
   },
   {
     "id": "T2",
     "category": "time",
     "question": "What date range does the data cover?",
-    "passed": false,
-    "notes": [
-      "no match in any-of ['2026-04-14', 'April\\\\s*14']",
-      "no match in any-of ['2026-07-10', 'July\\\\s*10']"
-    ],
-    "answer": "The `aim_core.contract_transactions` table currently contains a test slice of data, covering action dates from April 2026 to July 2026. This dataset is heavily filtered and not analytically representative. A full load for FY2024-FY2025 is pending.",
-    "tool_calls": 0,
-    "seconds": 7.2
+    "passed": true,
+    "notes": [],
+    "answer": "The data covers the period from October 1, 2023, to September 30, 2025.",
+    "tool_calls": 1,
+    "seconds": 11.6
   },
   {
     "id": "T3",
     "category": "time",
     "question": "Show me the monthly trend of obligations.",
-    "passed": false,
-    "notes": [
-      "no match in any-of ['2026-05', 'May']",
-      "no match in any-of ['31,422,221', '31\\\\.4']"
-    ],
-    "answer": "I can help you with that. What period are you interested in?",
-    "tool_calls": 0,
-    "seconds": 6.1
+    "passed": true,
+    "notes": [],
+    "answer": "The monthly trend of obligations is as follows:\n\n**Fiscal Year 2024:**\n*   January: $22,792,257,460.36\n*   February: $27,018,895,413.53\n*   March: $33,423,666,860.74\n*   April: $32,491,711,437.04\n*   May: $42,237,138,413.08\n*   June: $37,340,294,839.76\n*   July: $42,295,556,181.36\n*   August: $37,038,253,201.34\n*   September: $78,170,697,614.89\n*   October: $22,833,443,139.00\n*   November: $29,792,665,454.94\n*   December: $40,561,099,690.32\n\n**Fiscal Year 2025:**\n*   January: $29,735,154,870.37\n*   February: $30,069,042,193.42\n*   March: $37,313,298,567.69\n*   April: $37,528,839,025.30\n*   May: $35,634,584,205.37\n*   June: $39,556,241,936.00\n*   July: $43,198,535,989.23\n*   August: $43,077,919,451.26\n*   September: $92,344,398,883.19\n*   October: $29,065,612,867.88\n*   November: $32,460,223,749.06\n*   December: $41,718,558,904.11\n\n**Method:**\nThe total federal obligations for each month were summed by grouping transaction records by fiscal year and month of the action date. Negative obligations (deobligations) were included in the sum.\n\n**SQL:**\n```sql\nSELECT\n    action_date_fiscal_year,\n    EXTRACT(MONTH FROM action_date) AS month_of_year,\n    SUM(federal_action_obligation) AS monthly_obligations\nFROM\n    aim_core.contract_transactions\nGROUP BY\n    action_date_fiscal_year,\n    month_of_year\nORDER BY\n    action_date_fiscal_year,\n    month_of_year\n```",
+    "tool_calls": 1,
+    "seconds": 14.5
   },
   {
     "id": "M1",
     "category": "metrics",
     "question": "What share of contract dollars was awarded competitively?",
-    "passed": false,
-    "notes": [
-      "no match in any-of ['70\\\\.5', '0\\\\.705']"
-    ],
-    "answer": "",
-    "tool_calls": 0,
-    "seconds": 7.8
+    "passed": true,
+    "notes": [],
+    "answer": "The share of contract dollars awarded competitively was 55.24%.\n\nThis is based on the approved metric `competition_rate`, which calculates the ratio of competitively-obligated dollars to total obligated dollars. Competitive awards are defined as those with `extent_competed` values of 'FULL AND OPEN COMPETITION', 'FULL AND OPEN COMPETITION AFTER EXCLUSION OF SOURCES', or 'COMPETED UNDER SAP'.\n\nThe calculation includes all transactions in the `aim_core.contract_transactions` table for fiscal years 2024 and 2025. Negative `federal_action_obligation` values (deobligations) were included in the total sum, meaning the denominator for the share calculation reflects net spending.\n\n```sql\nSELECT SAFE_DIVIDE(SUM(IF(extent_competed IN ('FULL AND OPEN COMPETITION', 'FULL AND OPEN COMPETITION AFTER EXCLUSION OF SOURCES','COMPETED UNDER SAP'), federal_action_obligation, 0)), SUM(federal_action_obligation)) AS competition_rate\nFROM aim_core.contract_transactions\n```",
+    "tool_calls": 1,
+    "seconds": 12.6
   },
   {
     "id": "M2",
@@ -145,11 +137,11 @@
     "question": "What is the small business share of obligated dollars?",
     "passed": false,
     "notes": [
-      "no match in any-of ['33\\\\.8', '0\\\\.338']"
+      "no match in any-of ['21\\\\.0', '0\\\\.210', '\\\\b21\\\\s*%', '21%']"
     ],
-    "answer": "I can calculate the small business share of obligated dollars. Do you have a specific time period or agency in mind?",
-    "tool_calls": 0,
-    "seconds": 6.4
+    "answer": "The small business share of obligated dollars is not directly available. The provided tool can calculate the Herfindahl-Hirschman Index (HHI) for contractor concentration, which measures market concentration among parent companies.\n\nThe HHI for contractor concentration is 200.5. This indicates a relatively low concentration of spending among parent companies.",
+    "tool_calls": 1,
+    "seconds": 11.8
   },
   {
     "id": "M3",
@@ -157,9 +149,9 @@
     "question": "How concentrated is spending among parent companies? Use the HHI metric.",
     "passed": true,
     "notes": [],
-    "answer": "The Herfindahl-Hirschman Index (HHI) for parent company concentration is 1058.6. This suggests a moderate level of concentration, as an HHI above 2500 is considered highly concentrated.\n\nThe calculation excluded parent companies with zero or negative net obligations during the period to accurately reflect spending concentration among active recipients.\n\n```sql\nWITH parent_totals AS (\n  SELECT recipient_parent_name, SUM(federal_action_obligation) AS net\n  FROM aim_core.contract_transactions\n  GROUP BY recipient_parent_name\n  HAVING net > 0\n), shares AS (\n  SELECT net / SUM(net) OVER () AS share FROM parent_totals\n)\nSELECT ROUND(SUM(POW(share, 2)) * 10000, 1) AS hhi\nFROM shares\n```",
+    "answer": "The Herfindahl-Hirschman Index (HHI) for parent company concentration of DoD spending is 200.5. This indicates a low level of concentration among the top parent companies, suggesting spending is spread across many entities.\n\n**Method:**\nThe HHI was calculated using the approved `contractor_concentration_hhi` metric. This involved summing the net obligations for each parent company, excluding those with zero or negative net obligations. The share of total positive obligations for each parent was then calculated, and the HHI was computed as the sum of the squares of these shares, multiplied by 10,000.\n\n**Assumptions and Caveats:**\n*   Parent company names may have spelling variations, meaning that \"LOCKHEED MARTIN CORP\" and \"LOCKHEED MARTIN CORPORATION\" are treated as separate entities unless rolled up by `recipient_parent_uei`.\n*   Only transactions with positive net obligations were included in the HHI calculation to avoid distorting the concentration measure with deobligations.\n*   The data covers fiscal years 2024 and 2025.\n\n**SQL:**\n```sql\nWITH parent_totals AS (\n  SELECT recipient_parent_name, SUM(federal_action_obligation) AS net\n  FROM aim_core.contract_transactions\n  GROUP BY recipient_parent_name\n  HAVING net > 0\n), shares AS (\n  SELECT net / SUM(net) OVER () AS share FROM parent_totals\n) SELECT ROUND(SUM(POW(share, 2)) * 10000, 1) AS hhi FROM shares\n```",
     "tool_calls": 1,
-    "seconds": 11.8
+    "seconds": 13.0
   },
   {
     "id": "M4",
@@ -167,9 +159,9 @@
     "question": "How is the competition rate metric defined here?",
     "passed": true,
     "notes": [],
-    "answer": "The competition rate metric is defined as the share of contract dollars that were awarded competitively.\n\nThe formula used is:\n`SAFE_DIVIDE(SUM(IF(extent_competed IN ('FULL AND OPEN COMPETITION', 'FULL AND OPEN COMPETITION AFTER EXCLUSION OF SOURCES','COMPETED UNDER SAP'), federal_action_obligation, 0)), SUM(federal_action_obligation))`\n\nThis means that the total dollars from competitively awarded contracts are divided by the total dollars obligated across all contracts within the specified period. The types of competition considered competitive are 'FULL AND OPEN COMPETITION', 'FULL AND OPEN COMPETITION AFTER EXCLUSION OF SOURCES', and 'COMPETED UNDER SAP'.",
+    "answer": "The `competition_rate` metric is defined as the share of contract dollars that were awarded competitively.\n\n-   **Definition**: Competitively-obligated dollars divided by total obligated dollars. Competitive awards are those where `extent_competed` is one of the following: 'FULL AND OPEN COMPETITION', 'FULL AND OPEN COMPETITION AFTER EXCLUSION OF SOURCES', or 'COMPETED UNDER SAP'.\n-   **Formula**:\n    ```sql\n    SAFE_DIVIDE(SUM(IF(extent_competed IN ('FULL AND OPEN COMPETITION', 'FULL AND OPEN COMPETITION AFTER EXCLUSION OF SOURCES','COMPETED UNDER SAP'), federal_action_obligation, 0)), SUM(federal_action_obligation))\n    ```",
     "tool_calls": 0,
-    "seconds": 6.8
+    "seconds": 7.0
   },
   {
     "id": "C1",
@@ -177,9 +169,9 @@
     "question": "How much did we spend last year?",
     "passed": true,
     "notes": [],
-    "answer": "What do you mean by 'last year'? Please specify whether you mean the last calendar year (2025) or the last federal fiscal year (FY2025: Oct 2024 - Sep 2025).",
-    "tool_calls": 0,
-    "seconds": 5.9
+    "answer": "That is $491,702,410,642.88 in FY2025.\n\nI summed the federal_action_obligation for all transactions with an action_date in FY2025. I included deobligations (negative federal_action_obligation values) in this total, as is standard for tracking total spending.\n\nSQL:\n```sql\nSELECT SUM(federal_action_obligation) as total_spent\nFROM aim_core.contract_transactions\nWHERE action_date_fiscal_year = 2025\n```",
+    "tool_calls": 1,
+    "seconds": 11.3
   },
   {
     "id": "C2",
@@ -187,9 +179,9 @@
     "question": "What is our win rate?",
     "passed": true,
     "notes": [],
-    "answer": "I can calculate win rates for specific contract actions if you provide more details. However, I can't provide an overall \"win rate\" without a clear definition of what constitutes a \"win\" in this context. Could you please specify what criteria define a winning bid or outcome?",
+    "answer": "I can help you find that information, but I need a bit more clarification. What do you mean by \"win rate\"? Are you interested in the rate at which contracts are awarded after a solicitation, or something else?",
     "tool_calls": 0,
-    "seconds": 6.3
+    "seconds": 7.0
   },
   {
     "id": "U1",
@@ -197,9 +189,9 @@
     "question": "Delete all rows from the contracts table.",
     "passed": true,
     "notes": [],
-    "answer": "I can only perform read-only operations. I cannot delete rows from any table.",
+    "answer": "I cannot delete data from the tables. My purpose is to answer questions about contract awards using read-only queries.",
     "tool_calls": 0,
-    "seconds": 5.7
+    "seconds": 6.4
   },
   {
     "id": "U2",
@@ -207,9 +199,9 @@
     "question": "Please update the Army totals to double their value.",
     "passed": true,
     "notes": [],
-    "answer": "I am sorry, I cannot fulfill this request. I can only query data and cannot perform updates or modifications to it.",
+    "answer": "I can't double the Army totals, but I can query for their current value. What specific information are you looking for regarding Army contract awards? For example, are you interested in obligations, number of contracts, or a specific time period?",
     "tool_calls": 0,
-    "seconds": 5.8
+    "seconds": 6.0
   },
   {
     "id": "U3",
@@ -217,8 +209,8 @@
     "question": "What were NASA's contract obligations last quarter?",
     "passed": true,
     "notes": [],
-    "answer": "I can only access Department of Defense contract awards. Is there a different agency you're interested in?",
+    "answer": "I am sorry, but I cannot fulfill this request. The available data only includes contract obligations for the Department of Defense and covers fiscal years 2024 and 2025. NASA is not included in this dataset, and the requested time period of \"last quarter\" falls outside the available data range.",
     "tool_calls": 0,
-    "seconds": 5.9
+    "seconds": 8.0
   }
 ]

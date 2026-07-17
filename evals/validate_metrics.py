@@ -19,7 +19,9 @@ from pathlib import Path
 from google.cloud import bigquery
 
 REPO = Path(__file__).resolve().parents[1]
-STAGED = REPO / "data" / "staging" / "test_dod_contracts_2026q2.csv.gz"
+# All staged FY files (falls back to the test slice if none exist yet)
+STAGED_FILES = sorted((REPO / "data" / "staging").glob("FY*_097_Contracts_Full_*.csv.gz")) \
+    or [REPO / "data" / "staging" / "test_dod_contracts_2026q2.csv.gz"]
 OUT = REPO / "evals" / "metric_validation.md"
 
 COMPETITIVE = {
@@ -30,32 +32,47 @@ COMPETITIVE = {
 
 # ---------- expected values: pure Python over the local file ----------
 
-rows = []
-with gzip.open(STAGED, "rt", encoding="utf-8", newline="") as f:
-    for r in csv.DictReader(f):
-        rows.append(r)
+GROUND_TRUTH = REPO / "evals" / "ground_truth.json"
 
-def money(r):
-    v = r["federal_action_obligation"].strip()
-    return float(v) if v else 0.0
+if GROUND_TRUTH.exists():
+    # Reuse the pure-Python pass already done by compute_ground_truth.py
+    # (same independence guarantee, no need to re-read millions of rows).
+    import json
+    gt = json.loads(GROUND_TRUTH.read_text(encoding="utf-8"))
+    expected = gt["metrics"]
+    n_rows = gt["transactions"]
+    population_note = f"{n_rows:,} transactions, {gt['date_range'][0]}..{gt['date_range'][1]} (from ground_truth.json)"
+else:
+    csv.field_size_limit(2**31 - 1)
+    rows = []
+    for staged in STAGED_FILES:
+        with gzip.open(staged, "rt", encoding="utf-8", newline="") as f:
+            for r in csv.DictReader(f):
+                rows.append(r)
 
-total = sum(money(r) for r in rows)
-competitive = sum(money(r) for r in rows if r["extent_competed"].strip() in COMPETITIVE)
-small = sum(money(r) for r in rows
-            if r["contracting_officers_determination_of_business_size"].strip() == "SMALL BUSINESS")
+    def money(r):
+        v = r["federal_action_obligation"].strip()
+        return float(v) if v else 0.0
 
-parent_net = defaultdict(float)
-for r in rows:
-    parent_net[r["recipient_parent_name"].strip()] += money(r)
-positives = [v for v in parent_net.values() if v > 0]
-pos_total = sum(positives)
-hhi = sum((v / pos_total) ** 2 for v in positives) * 10000
+    total = sum(money(r) for r in rows)
+    competitive = sum(money(r) for r in rows if r["extent_competed"].strip() in COMPETITIVE)
+    small = sum(money(r) for r in rows
+                if r["contracting_officers_determination_of_business_size"].strip() == "SMALL BUSINESS")
 
-expected = {
-    "competition_rate": competitive / total,
-    "small_business_share": small / total,
-    "contractor_concentration_hhi": hhi,
-}
+    parent_net = defaultdict(float)
+    for r in rows:
+        parent_net[r["recipient_parent_name"].strip()] += money(r)
+    positives = [v for v in parent_net.values() if v > 0]
+    pos_total = sum(positives)
+    hhi = sum((v / pos_total) ** 2 for v in positives) * 10000
+
+    expected = {
+        "competition_rate": competitive / total,
+        "small_business_share": small / total,
+        "contractor_concentration_hhi": hhi,
+    }
+    n_rows = len(rows)
+    population_note = f"{n_rows:,} transactions (recomputed from staged files)"
 
 # ---------- actual values: metric SQL in BigQuery ----------
 
@@ -105,7 +122,7 @@ lines = [
     "# Metric Validation Report",
     "",
     f"**Date:** {date.today().isoformat()} · **Population:** aim_core.contract_transactions "
-    f"({len(rows)} transactions, test slice Apr-Jul 2026)",
+    f"({population_note})",
     "",
     "Two fully independent computation paths: pure Python over the local staged",
     "CSV vs. the metric formula SQL executed in BigQuery. Agreement validates the",
@@ -118,14 +135,11 @@ for name, exp, act, ok in results:
     lines.append(f"| {name} | {exp:.6f} | {act:.6f} | {'✅ MATCH' if ok else '❌ MISMATCH'} |")
 lines += [
     "",
-    "Interpretation on this test slice:",
+    "Interpretation:",
     f"- competition_rate = {expected['competition_rate']:.1%} of dollars competitively awarded",
     f"- small_business_share = {expected['small_business_share']:.1%} of dollars to small businesses",
     f"- HHI = {expected['contractor_concentration_hhi']:.0f} "
-    "(>2500 = highly concentrated by antitrust convention; small samples skew high)",
-    "",
-    "NOTE: values are from the 204-row test slice and are NOT representative;",
-    "re-run this script after the full FY2024-FY2025 load to re-validate.",
+    "(>2500 = highly concentrated by antitrust convention)",
 ]
 OUT.write_text("\n".join(lines), encoding="utf-8")
 print(f"\nreport -> {OUT}")

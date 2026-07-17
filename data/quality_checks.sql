@@ -1,11 +1,16 @@
 -- quality_checks.sql : run after transform.sql (proposal 4.1)
 -- Every row of the result must show PASS.
 
-WITH raw_stats AS (
+WITH raw_union AS (
+  SELECT * FROM aim_raw.dod_contracts_fy2024
+  UNION ALL
+  SELECT * FROM aim_raw.dod_contracts_fy2025
+),
+raw_stats AS (
   SELECT COUNT(*) AS raw_rows,
          COUNT(DISTINCT contract_transaction_unique_key) AS raw_distinct_keys,
          ROUND(SUM(federal_action_obligation), 2) AS raw_dollars
-  FROM aim_raw.dod_contracts_test
+  FROM raw_union
 ),
 core_stats AS (
   SELECT COUNT(*) AS core_rows,
@@ -43,5 +48,12 @@ SELECT check_name, IF(passed, 'PASS', 'FAIL') AS result, detail FROM (
   SELECT '8 dates in plausible range', c.min_date >= '2007-10-01' AND c.max_date <= CURRENT_DATE(),
          FORMAT('min=%t max=%t', c.min_date, c.max_date)
   FROM core_stats c
+  UNION ALL
+  SELECT '9 fiscal years are FY2024/FY2025 only',
+         (SELECT COUNT(*) FROM aim_core.contract_transactions
+          WHERE action_date_fiscal_year NOT IN (2024, 2025)) = 0,
+         (SELECT FORMAT('out-of-range rows=%d',
+                 COUNTIF(action_date_fiscal_year NOT IN (2024, 2025)))
+          FROM aim_core.contract_transactions)
 )
 ORDER BY check_name;
