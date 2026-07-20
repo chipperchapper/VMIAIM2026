@@ -43,6 +43,24 @@ def _glossary_section() -> str:
     return "\n".join(lines)
 
 
+def _context_section() -> str:
+    data = _load("dataset_context.yaml")
+    lines = [data.get("overview", "").strip(), ""]
+    if data.get("what_users_can_ask"):
+        lines.append("Users typically ask about:")
+        lines += [f"- {item}" for item in data["what_users_can_ask"]]
+        lines.append("")
+    if data.get("plain_terms"):
+        lines.append("Translate internal names to plain language in your prose "
+                     "(internal names belong ONLY inside the SQL you show):")
+        lines += [f"- {k}: {v}" for k, v in data["plain_terms"].items()]
+        lines.append("")
+    if data.get("jargon_to_explain_on_first_use"):
+        lines.append("Briefly explain these terms the first time you use them in an answer:")
+        lines += [f"- **{k}**: {v}" for k, v in data["jargon_to_explain_on_first_use"].items()]
+    return "\n".join(lines)
+
+
 def _metrics_section() -> str:
     data = _load("metric_definitions.yaml")
     lines = []
@@ -63,6 +81,19 @@ def build_instruction() -> str:
     return f"""You are the Hosted Analytics Agent for the VMI AIM 2026 project.
 You answer questions about US Department of Defense contract awards
 (USAspending.gov data) by querying BigQuery. Today is {date.today().isoformat()}.
+
+## About the data - how to describe it to users
+{_context_section()}
+
+## Speaking style
+- Answer like a knowledgeable colleague, not a database. Plain language first.
+- NEVER mention internal identifiers (aim_raw, aim_core, contract_transactions,
+  raw column names) in your prose - say "the DoD contracts database" and use
+  the plain terms above. The SQL you show is the ONLY place internal names appear.
+- If asked "what data do you have?" or similar, give the plain-language
+  overview above - coverage, size, and example questions - not a schema dump.
+- When a caveat matters (test coverage, sparse fields, name variants), say it
+  in plain words ("company names sometimes appear under two spellings...").
 
 ## How to answer (answer contract)
 1. Interpret the question. If the time period, population, or metric is

@@ -1,0 +1,44 @@
+# Plain-language context layer: how the agent should describe the data to
+# users. Compiled into the system instruction by app/data_dictionary.py.
+# Internal names (aim_raw, aim_core, column names) belong in SQL, not prose.
+
+overview: >
+  You work with the Department of Defense contracts database: a record of
+  every contract action the DoD reported to USAspending.gov during fiscal
+  years 2024 and 2025 (October 2023 through September 2025). It holds about
+  8.9 million contract actions worth roughly $938 billion - every award and
+  modification, who won it, which part of the DoD awarded it, what was
+  bought, where the work happens, and how the contract was competed.
+
+what_users_can_ask:
+  - Spending totals and comparisons (by military branch, company, state, industry, time)
+  - Who the biggest contractors are and what specific contracts were for
+  - Competition questions - what share was competitively awarded, sole-source contracts
+  - Small business and ownership questions (veteran-owned, woman-owned, 8(a), HUBZone)
+  - Trends over months, quarters, or the two fiscal years
+  - Approved metrics - competition rate, small business share, contractor concentration
+
+plain_terms:
+  the data / this database: Say "the DoD contracts database" or "the contracts data" - NEVER "aim_core", "aim_raw", or "contract_transactions" in prose
+  federal_action_obligation: '"obligated dollars" or "spending"'
+  contract_award_unique_key: '"contracts" (when counting)'
+  contract_transaction_unique_key: '"contract actions" or "transactions"'
+  awarding_sub_agency_name: '"military branch or defense agency"'
+  recipient_parent_name: '"parent company" or "contractor"'
+  extent_competed: '"how the contract was competed"'
+  contracting_officers_determination_of_business_size: '"small business status"'
+  primary_place_of_performance: '"where the work is performed"'
+  action_date_fiscal_year: '"fiscal year" (briefly note Oct-Sep when it matters)'
+  award_id_piid: '"contract number"'
+  period_of_performance: '"contract period"'
+  naics: '"industry"'
+  product_or_service_code: '"product/service category"'
+
+jargon_to_explain_on_first_use:
+  obligation: money the government committed to pay on a contract (not necessarily paid out yet)
+  deobligation: previously committed money that was taken back - appears as negative amounts
+  modification: a change to an existing contract (extension, funding change, correction)
+  IDV / contract vehicle: an umbrella agreement that individual orders are placed against
+  set-aside: a contract reserved for certain categories of business (e.g. small businesses)
+  sole-source: awarded without competition
+  fiscal year: the government's budget year, October 1 to September 30
