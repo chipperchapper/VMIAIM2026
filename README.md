@@ -93,19 +93,18 @@ gcloud run deploy hosted-analytics-agent \
   --source . --project=vmi-aim-2026 --region=us-east1 \
   --service-account=hosted-analytics-agent@vmi-aim-2026.iam.gserviceaccount.com \
   --set-env-vars="GOOGLE_GENAI_USE_VERTEXAI=True,GOOGLE_CLOUD_PROJECT=vmi-aim-2026,GOOGLE_CLOUD_LOCATION=global,AGENT_MODEL=gemini-2.5-flash-lite,SAFETY_SWITCH=LIVE,REQUIRE_EXPLICIT_LIVE=true,BQ_LOCATION=US,BUILD_ID=$(git rev-parse --short HEAD)" \
-  --no-allow-unauthenticated \
+  --set-secrets="APP_PASSWORD=APP_PASSWORD:latest" \
+  --allow-unauthenticated \
   --min-instances=0 --max-instances=2 --memory=512Mi --cpu=1 --concurrency=10 --timeout=120
 ```
 
 Current service: `https://hosted-analytics-agent-171286699495.us-east1.run.app`
-(**private** — requires a Google identity). To open it in a browser:
-
-```bash
-gcloud run services proxy hosted-analytics-agent --region us-east1 --project vmi-aim-2026
-# then open http://localhost:8080
-```
-
-To make it public later, redeploy with `--allow-unauthenticated`.
+(**public** URL, but every `/api/*` call requires the shared password —
+decision D6). The password lives only in Secret Manager (`APP_PASSWORD`,
+value set via the console UI, never in code or chat); the UI shows a lock
+screen and sends it as an `X-App-Password` header. To rotate it, add a new
+secret version in the console — new instances pick up `:latest` on the
+next deploy or scale-up.
 
 The runtime service account can ONLY run read-only BigQuery jobs and call
 Vertex AI (`bigquery.jobUser`, `bigquery.dataViewer`, `aiplatform.user`).
