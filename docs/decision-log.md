@@ -63,4 +63,15 @@ Format per proposal §7.2: decision · alternatives considered · reason · date
 
 ---
 
-*(Project's core scope is complete; future entries would cover post-demo iterations — e.g., vendor-name normalization, model-tier change, IAP.)*
+## D7 — Self-learning loop: user feedback becomes learned examples
+
+- **Date:** 2026-07-22
+- **Decision:** The agent now learns from its users. 👍/👎 buttons under every answer post to a password-gated `/api/feedback` endpoint; rows land in `aim_analytics.agent_feedback` (day-partitioned, plus a local `logs/feedback.jsonl` trace). The agent's instruction is now built dynamically per model call: thumbs-up question→SQL pairs are re-checked against the SQL validator and injected as up to 12 few-shot "learned examples" (30-minute cache, invalidated immediately by new thumbs-up feedback). The empty `aim_analytics` dataset finally has a job.
+- **Alternatives considered:** model fine-tuning (cost, quota, and irreversibility — wrong fit at this scale); learning automatically from every successful query without a human signal (would learn plausible-but-wrong answers as happily as right ones).
+- **Safety properties:** learned SQL is validated twice (at learn time and, as always, at run time — a poisoned example can never execute anything the validator bans); user free-text comments are stored for human review but **never enter the prompt** (prompt-injection surface); any learning failure degrades to "no learned section", never a broken agent. Also hardened the instruction: in DRY_RUN mode the model must never invent numeric results (observed once locally in testing).
+- **Access change required:** the runtime service account needs **WRITER on the `aim_analytics` dataset only** (dataset-level ACL, not project IAM) so the cloud app can insert feedback rows. Reading learned examples already works via its existing `dataViewer`.
+- **Verified:** 9 new unit tests (poisoned-SQL exclusion, dedupe, cap, TTL, stale-over-missing, comment isolation) — 19/19 suite green; local end-to-end: UI thumbs-up → BigQuery row → learned example present in the next model call's instruction.
+
+---
+
+*(Future candidates: vendor-name normalization, model-tier change, IAP, periodic learned-example review job.)*

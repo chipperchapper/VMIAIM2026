@@ -132,6 +132,9 @@ You answer questions about US Department of Defense contract awards
   user explicitly asks about seasonal patterns.
 - DoD program fields (claimant/acquisition program) are sparsely populated —
   qualify answers computed from them.
+- If run_query did NOT execute (DRY_RUN mode, or any error), you have NO
+  results. NEVER state or estimate a numeric answer in that case — show the
+  validated SQL and say execution is disabled.
 
 ## Data dictionary
 {_tables_section()}

@@ -21,8 +21,11 @@ from google.adk.sessions import InMemorySessionService
 from google.genai import types
 from pydantic import BaseModel
 
+from typing import Literal
+
 from .agent import root_agent
 from .config import CONFIG, logger
+from . import learning
 
 APP_NAME = "hosted_analytics_agent"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -69,6 +72,15 @@ class ChatRequest(BaseModel):
     session_id: str
 
 
+class FeedbackRequest(BaseModel):
+    session_id: str
+    question: str
+    answer: str = ""
+    sql: str | None = None
+    rating: Literal["up", "down"]
+    comment: str | None = None
+
+
 @app.get("/")
 async def index():
     return FileResponse(STATIC_DIR / "index.html")
@@ -88,6 +100,22 @@ async def meta(_: None = Depends(require_password)) -> dict[str, Any]:
             "obligations. Public domain data, loaded 2026-07-17."
         ),
     }
+
+
+@app.post("/api/feedback")
+async def feedback(req: FeedbackRequest, _: None = Depends(require_password)) -> dict[str, Any]:
+    """Store a thumbs-up/down on an answer (self-learning loop, D7)."""
+    stored = learning.record_feedback(
+        session_id=req.session_id,
+        question=req.question,
+        sql=req.sql,
+        answer=req.answer,
+        rating=req.rating,
+        comment=req.comment,
+        model=CONFIG.model,
+        build_id=BUILD_ID,
+    )
+    return {"ok": True, "stored": stored}
 
 
 @app.post("/api/chat")

@@ -107,9 +107,28 @@ secret version in the console — new instances pick up `:latest` on the
 next deploy or scale-up.
 
 The runtime service account can ONLY run read-only BigQuery jobs and call
-Vertex AI (`bigquery.jobUser`, `bigquery.dataViewer`, `aiplatform.user`).
+Vertex AI (`bigquery.jobUser`, `bigquery.dataViewer`, `aiplatform.user`),
+plus WRITER on the `aim_analytics` dataset only (feedback rows, D7).
 No service-account keys exist. The `OPENAI_API_KEY` secret in Secret Manager
 is empty/unused (Vertex AI made it unnecessary).
+
+## Self-learning loop (D7)
+
+Every answer in the web UI has 👍/👎 buttons. Feedback flows:
+
+```
+UI thumbs → POST /api/feedback → aim_analytics.agent_feedback (BigQuery)
+                                        │
+        agent instruction  ←  learned examples (thumbs-up Q→SQL pairs that
+        (rebuilt per call)     still pass the SQL validator; max 12; 30-min
+                               cache, refreshed instantly on new thumbs-up)
+```
+
+- Setup (one-time): `python data/create_feedback_table.py`
+- Inspect what it has learned:
+  `SELECT * FROM aim_analytics.agent_feedback ORDER BY ts DESC`
+- Un-learn something: delete its row(s) — examples vanish at the next refresh.
+- Free-text comments are for human review only; they never enter the prompt.
 
 ## Logs & troubleshooting
 

@@ -117,6 +117,22 @@
 
   .meta-line { font-size: .68rem; color: var(--ink-soft); margin-top: .35rem; font-family: var(--mono); }
 
+  /* feedback (self-learning loop) */
+  .fb-bar { display: flex; align-items: center; gap: .45rem; margin-top: .45rem; }
+  .fb-label { font-size: .72rem; color: var(--ink-soft); }
+  .fb-btn {
+    font: inherit; font-size: .85rem; background: var(--green-soft);
+    border: 1px solid transparent; border-radius: 99px; padding: .2rem .6rem; cursor: pointer;
+  }
+  .fb-btn:hover { border-color: var(--green); }
+  .fb-btn:disabled { opacity: .45; cursor: default; }
+  .fb-thanks { font-size: .72rem; color: var(--green); }
+  .fb-comment { display: flex; gap: .4rem; margin-top: .4rem; }
+  .fb-comment input {
+    flex: 1; font: inherit; font-size: .8rem; padding: .3rem .55rem;
+    border: 1px solid var(--ink-soft); border-radius: 8px; background: transparent; color: inherit;
+  }
+
   /* typing indicator */
   .typing { display: inline-flex; gap: .3rem; padding: .9rem 1.1rem; }
   .typing span {
@@ -406,8 +422,58 @@
       m.textContent = opts.metaLine;
       body.appendChild(m);
     }
+    if (opts.feedback) body.appendChild(buildFeedbackBar(opts.feedback));
     lane.appendChild(el); scroll();
     return el;
+  }
+
+  /* ---------- feedback (self-learning loop) ---------- */
+  async function sendFeedback(payload) {
+    try {
+      await fetch("/api/feedback", {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      });
+    } catch (e) { /* feedback is best-effort; never bother the user */ }
+  }
+
+  function buildFeedbackBar(fb) {
+    const bar = document.createElement("div");
+    bar.className = "fb-bar";
+    bar.innerHTML = `<span class="fb-label">Was this right?</span>` +
+      `<button class="fb-btn" type="button" title="Good answer">👍</button>` +
+      `<button class="fb-btn" type="button" title="Something was off">👎</button>`;
+    const [up, down] = bar.querySelectorAll(".fb-btn");
+    const base = { session_id: sessionId, question: fb.question, answer: fb.answer, sql: fb.sql || null };
+
+    function thanks(text) {
+      bar.innerHTML = `<span class="fb-thanks">${esc(text)}</span>`;
+    }
+    up.onclick = () => {
+      sendFeedback({ ...base, rating: "up" });
+      thanks("Thanks! I'll remember how I answered this one. ✓");
+    };
+    down.onclick = () => {
+      const wrap = document.createElement("div");
+      wrap.className = "fb-comment";
+      wrap.innerHTML = `<input type="text" maxlength="500" placeholder="What was wrong? (optional)">` +
+        `<button class="fb-btn" type="button">Send</button>`;
+      bar.replaceWith(wrap);
+      const input = wrap.querySelector("input");
+      const sendBtn = wrap.querySelector("button");
+      const submit = () => {
+        sendFeedback({ ...base, rating: "down", comment: input.value.trim() || null });
+        const t = document.createElement("div");
+        t.className = "fb-bar";
+        t.innerHTML = `<span class="fb-thanks">Thanks — noted for review. ✓</span>`;
+        wrap.replaceWith(t);
+      };
+      sendBtn.onclick = submit;
+      input.onkeydown = e => { if (e.key === "Enter") submit(); };
+      input.focus();
+    };
+    return bar;
   }
 
   function addTyping() {
@@ -444,9 +510,14 @@
       if (!r.ok || !data.ok) {
         addAgent(esc(data.error || "The server had a problem. Please try again."), { error: true });
       } else {
+        let lastSql = null;
+        (data.tool_events || []).forEach(ev => {
+          if (ev.type === "call" && ev.tool === "run_query" && ev.args && ev.args.sql) lastSql = ev.args.sql;
+        });
         addAgent(renderMarkdown(data.answer), {
           toolEvents: data.tool_events,
           metaLine: (data.duration_ms / 1000).toFixed(1) + "s · " + data.mode + " mode",
+          feedback: { question: text.trim(), answer: data.answer, sql: lastSql },
         });
       }
     } catch (e) {
