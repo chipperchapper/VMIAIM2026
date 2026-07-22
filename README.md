@@ -117,12 +117,19 @@ is empty/unused (Vertex AI made it unnecessary).
 Every answer in the web UI has 👍/👎 buttons. Feedback flows:
 
 ```
-UI thumbs → POST /api/feedback → aim_analytics.agent_feedback (BigQuery)
-                                        │
-        agent instruction  ←  learned examples (thumbs-up Q→SQL pairs that
-        (rebuilt per call)     still pass the SQL validator; max 12; 30-min
-                               cache, refreshed instantly on new thumbs-up)
+UI thumbs ──→ POST /api/feedback ─┐
+query error → later success ──────┤ (auto, rating='fix')
+                                  ▼
+                aim_analytics.agent_feedback (BigQuery)
+                                  │
+   agent instruction ←── three learned sections, all validator-gated:
+   (rebuilt per call)      👍 examples (max 12) · 👎 anti-examples (max 5)
+                           · self-corrections error→working-SQL (max 6)
+                           30-min cache, refreshed instantly on new feedback
 ```
+
+The newest rating for a question wins: answer marked wrong once but
+confirmed right later shows up only as a good example.
 
 - Setup (one-time): `python data/create_feedback_table.py`
 - Inspect what it has learned:

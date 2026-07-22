@@ -23,6 +23,29 @@ _audit = AuditLogger()
 _rate_limiter = RateLimiter()
 _client: bigquery.Client | None = None
 
+# Self-correction memory (D7): remember the most recent query error so that
+# when a follow-up query succeeds, the (error -> working SQL) pair is learned.
+_FIX_WINDOW_S = 120
+_last_error: dict[str, Any] = {"msg": None, "ts": 0.0}
+
+
+def _note_error(msg: str) -> None:
+    import re
+    msg = re.sub(r"^\d{3}\s+\w+\s+https?://\S+:\s*", "", msg)   # "400 POST <url>: "
+    msg = re.sub(r"\s*Location:\s*\S+\s*Job ID:.*$", "", msg)   # trailing job noise
+    _last_error["msg"] = msg.strip()[:400]
+    _last_error["ts"] = time.time()
+
+
+def _note_success(sql: str) -> None:
+    if _last_error["msg"] and (time.time() - _last_error["ts"]) < _FIX_WINDOW_S:
+        try:
+            from ..learning import record_auto_fix
+            record_auto_fix(_last_error["msg"], sql)
+        except Exception:  # learning must never break querying
+            logger.warning("auto-fix record failed", exc_info=True)
+    _last_error["msg"] = None
+
 
 def _bq() -> bigquery.Client:
     global _client
@@ -121,12 +144,14 @@ def run_query(sql: str) -> dict[str, Any]:
         bytes_est = int(dry.total_bytes_processed or 0)
     except GoogleCloudError as e:
         _audit.log("query_invalid", sql=sql, error=str(e))
+        _note_error(str(e))
         return {"status": "error", "error": f"Query validation failed: {e}"}
 
     _rate_limiter.record()
 
     if CONFIG.is_dry_run:
         _audit.log("query_dry_run", sql=sql, bytes_estimate=bytes_est)
+        _note_success(sql)
         return {
             "status": "success",
             "mode": "DRY_RUN",
@@ -147,10 +172,12 @@ def run_query(sql: str) -> dict[str, Any]:
     except GoogleCloudError as e:
         _audit.log("query_failed", sql=sql, error=str(e),
                    duration_ms=int((time.time() - start) * 1000))
+        _note_error(str(e))
         return {"status": "error", "error": f"Query execution failed: {e}"}
 
     duration_ms = int((time.time() - start) * 1000)
     _audit.log("query_ok", sql=sql, bytes=bytes_used, rows=len(rows), duration_ms=duration_ms)
+    _note_success(sql)
 
     return {
         "status": "success",

@@ -13,15 +13,17 @@ from app import learning
 
 
 def _rows(pairs):
-    return [{"question": q, "sql": s} for q, s in pairs]
+    out = []
+    for p in pairs:
+        q, s, *rest = p
+        out.append({"question": q, "sql": s, "rating": rest[0] if rest else "up"})
+    return out
 
 
 def _mock_bq(rows):
     client = MagicMock()
     job = MagicMock()
-    job.result.return_value = _rows(rows) and [
-        {"question": r["question"], "sql": r["sql"]} for r in _rows(rows)
-    ]
+    job.result.return_value = _rows(rows)
     client.query.return_value = job
     return client
 
@@ -122,3 +124,40 @@ def test_comments_never_reach_the_prompt():
         ("A question?", "SELECT 2 FROM aim_core.contract_transactions"),
     ])
     assert "comment" not in section.lower()
+
+
+def test_thumbs_down_becomes_anti_example():
+    section = _section_with([
+        ("Which month had the most spending?",
+         "SELECT month FROM aim_core.contract_transactions LIMIT 1", "down"),
+    ])
+    assert "anti-examples" in section
+    assert "wrong answer" in section
+
+
+def test_auto_fix_becomes_self_correction():
+    section = _section_with([
+        ("[error] Analytic functions cannot be arguments to aggregate functions",
+         "SELECT x FROM aim_core.contract_transactions", "fix"),
+    ])
+    assert "self-corrections" in section
+    assert "Analytic functions" in section
+    assert "SQL that worked" in section
+
+
+def test_newest_rating_wins_per_question():
+    """A question answered wrong once but confirmed right later (rows are
+    newest-first) must appear only as a good example."""
+    section = _section_with([
+        ("Army spend?", "SELECT 2 FROM aim_core.contract_transactions", "up"),    # newest
+        ("Army spend?", "SELECT 1 FROM aim_core.contract_transactions", "down"),  # older
+    ])
+    assert "anti-examples" not in section
+    assert "SELECT 2" in section
+
+
+def test_poisoned_fix_sql_is_excluded():
+    section = _section_with([
+        ("[error] some error", "DROP TABLE aim_core.contract_transactions", "fix"),
+    ])
+    assert "DROP" not in section
